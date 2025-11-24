@@ -13,7 +13,7 @@
       color: white;
     }
 
-    /* Lateral usuarios */
+    /* LADO USUARIOS */
     #sidebar {
       width: 220px;
       background: #202225;
@@ -34,21 +34,33 @@
       overflow-y: auto;
     }
 
-    #user-list div {
+    .user-entry {
       display: flex;
       align-items: center;
+      padding: 5px;
       margin-bottom: 5px;
+      border-radius: 4px;
       cursor: pointer;
+      transition: 0.2s;
     }
 
-    #user-list div img {
+    .user-entry:hover {
+      background: #333;
+    }
+
+    .user-entry img {
       width: 24px;
       height: 24px;
       border-radius: 50%;
       margin-right: 5px;
     }
 
-    /* Chat principal */
+    /* mi propio usuario resaltado */
+    .meUser {
+      background: #1f6f36 !important;
+    }
+
+    /* CHAT */
     #chat-container {
       flex: 1;
       display: flex;
@@ -65,22 +77,65 @@
     }
 
     .message {
+      width: 100%;
+      display: flex;
+      margin-bottom: 8px;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    .message.me {
+      justify-content: flex-end;
+    }
+
+    .message.other {
+      justify-content: flex-start;
+    }
+
+    .msgBubble {
+      background: #2f3136;
+      padding: 8px;
+      border-radius: 8px;
+      max-width: 60%;
       display: flex;
       align-items: center;
-      margin-bottom: 5px;
+      gap: 6px;
     }
 
-    .message img {
-      width: 30px;
-      height: 30px;
+    .message.me .msgBubble {
+      background: #3f51b5;
+    }
+
+    .message.other .msgBubble {
+      background: #2b2d31;
+    }
+
+    .msgBubble img {
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
-      margin-right: 5px;
-      cursor: pointer;
     }
 
-    .admin b { color: red; }
-    .user b { color: #00b0f4; }
+    .textBlock b {
+      display: block;
+      margin-bottom: 3px;
+      color: #fff;
+    }
 
+    .systemMsg {
+      background: #444;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin: auto;
+      opacity: 0.8;
+    }
+
+    /* Animación */
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(6px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* INPUT */
     #input-container {
       margin-top: 10px;
       display: flex;
@@ -144,6 +199,7 @@
 
   <div id="chat-container">
     <div id="messages"></div>
+
     <div id="input-container">
       <input id="msgBox" placeholder="Escribe tu mensaje...">
       <button id="sendBtn">Enviar</button>
