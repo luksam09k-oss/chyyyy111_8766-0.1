@@ -15,7 +15,7 @@
 
     /* Lateral usuarios */
     #sidebar {
-      width: 200px;
+      width: 220px;
       background: #202225;
       padding: 10px;
       display: flex;
@@ -78,13 +78,8 @@
       cursor: pointer;
     }
 
-    .message.admin b {
-      color: red;
-    }
-
-    .message.user b {
-      color: #00b0f4;
-    }
+    .admin b { color: red; }
+    .user b { color: #00b0f4; }
 
     #input-container {
       margin-top: 10px;
@@ -118,6 +113,21 @@
       color: white;
       cursor: pointer;
     }
+
+    #avatarInput {
+      margin-top: 10px;
+    }
+
+    #changeAvatarBtn {
+      margin-top: 5px;
+      padding: 5px;
+      border: none;
+      border-radius: 5px;
+      background: #4caf50;
+      color: white;
+      cursor: pointer;
+    }
+
   </style>
 </head>
 <body>
@@ -125,14 +135,18 @@
   <div id="sidebar">
     <h3>Usuarios conectados</h3>
     <div id="user-list"></div>
-    <button id="logoutBtn" onclick="logout()">Logout</button>
+
+    <input type="file" id="avatarInput">
+    <button id="changeAvatarBtn">Cambiar Avatar</button>
+
+    <button id="logoutBtn">Logout</button>
   </div>
 
   <div id="chat-container">
     <div id="messages"></div>
     <div id="input-container">
       <input id="msgBox" placeholder="Escribe tu mensaje...">
-      <button id="sendBtn" onclick="sendMsg()">Enviar</button>
+      <button id="sendBtn">Enviar</button>
     </div>
   </div>
 
