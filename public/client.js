@@ -9,19 +9,17 @@ socket.emit("join-room", { room: "chat", username, rol }, (res) => {
     else alert("No puedes entrar al chat");
     return;
   }
-
-  // Renderizar historial
   res.history.forEach(addMessage);
 });
 
-// Escuchar nuevos mensajes
+// Escuchar mensajes
 socket.on("new-message", addMessage);
 socket.on("system-message", addMessage);
 socket.on("clear-chat", () => document.getElementById("messages").innerHTML = "");
 
 // Render lateral de usuarios
 socket.on("user-list", (users) => {
-  const side = document.getElementById("user-list"); // CORREGIDO
+  const side = document.getElementById("user-list");
   side.innerHTML = "";
   users.forEach(u => {
     const div = document.createElement("div");
@@ -46,7 +44,6 @@ document.getElementById("msgBox").addEventListener("keypress", e => {
 // Enviar mensaje con botón
 document.getElementById("sendBtn").addEventListener("click", sendMsg);
 
-// Función para enviar mensaje
 function sendMsg() {
   const msg = document.getElementById("msgBox").value.trim();
   if (!msg) return;
@@ -62,12 +59,11 @@ function sendMsg() {
 function addMessage(m) {
   const box = document.getElementById("messages");
   const line = document.createElement("div");
-  line.className = m.rol || "user"; // aplica clase admin/user
+  line.className = m.rol || "user";
   line.style.display = "flex";
   line.style.alignItems = "center";
   line.style.marginBottom = "5px";
 
-  // Mensaje del sistema
   if (!m.user) {
     line.innerHTML = `<b>SYSTEM:</b> ${m.text}`;
   } else {
@@ -82,8 +78,28 @@ function addMessage(m) {
 }
 
 // Logout
-function logout() {
+document.getElementById("logoutBtn").addEventListener("click", () => {
   localStorage.removeItem("username");
   localStorage.removeItem("rol");
   location.href = "/login.html";
-}
+});
+
+// Cambiar avatar
+document.getElementById("changeAvatarBtn").addEventListener("click", async () => {
+  const fileInput = document.getElementById("avatarInput");
+  if (!fileInput.files.length) return alert("Selecciona una imagen");
+
+  const formData = new FormData();
+  formData.append("avatar", fileInput.files[0]);
+  formData.append("username", username);
+
+  const res = await fetch("/upload-avatar", { method: "POST", body: formData });
+  const data = await res.json();
+  if (data.ok) {
+    alert("Avatar actualizado!");
+    // refrescar usuarios y mensajes
+    socket.emit("join-room", { room: "chat", username, rol }, () => {});
+  } else {
+    alert("Error al subir avatar");
+  }
+});
