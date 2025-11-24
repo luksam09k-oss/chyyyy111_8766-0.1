@@ -4,21 +4,19 @@ const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const { GridFsStorage } = require('multer-gridfs-storage');
+const { GridFSBucket, ObjectId } = require('mongodb');
 const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-
 const PORT = process.env.PORT || 3000;
 
 // === MongoDB ===
 mongoose.connect(
   "mongodb+srv://luksam09k_db_user:D7mcreChPJu9HFBt@cluster0.3bnnbke.mongodb.net/ChatDB?retryWrites=true&w=majority"
 );
-
 const conn = mongoose.connection;
-conn.once("open", () => console.log("MongoDB conectado"));
 
 // === Schemas ===
 const userSchema = new mongoose.Schema({
@@ -36,20 +34,24 @@ const messageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model("Message", messageSchema);
 
-// === GridFS ===
+// === GridFS para avatars ===
 const storage = new GridFsStorage({
   url: "mongodb+srv://luksam09k_db_user:D7mcreChPJu9HFBt@cluster0.3bnnbke.mongodb.net/ChatDB",
-  file: (req, file) => ({
-    filename: `${Date.now()}_${file.originalname}`
-  })
+  file: (req, file) => ({ filename: `${Date.now()}_${file.originalname}` })
 });
 const upload = multer({ storage });
 
-// === Express ===
+let bucket;
+conn.once('open', () => {
+  console.log("MongoDB conectado");
+  bucket = new GridFSBucket(conn.db, { bucketName: "avatars" });
+});
+
+// === Middleware ===
 app.use(express.static('public'));
 app.use(express.json());
 
-// === LOGIN ===
+// === Login ===
 app.post('/login', async (req, res) => {
   const { user, pass } = req.body;
   const u = await User.findOne({ username: user });
@@ -57,7 +59,7 @@ app.post('/login', async (req, res) => {
   res.json({ ok: true, user: u.username, rol: u.rol, avatarId: u.avatarId });
 });
 
-// === AVATAR UPLOAD ===
+// === Upload avatar ===
 app.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
   const { username } = req.body;
   const fileId = req.file.id;
@@ -65,14 +67,24 @@ app.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
   res.json({ ok: true, fileId });
 });
 
-// === SOCKET.IO ===
+// === Endpoint para servir avatars ===
+app.get("/avatar/:id", (req, res) => {
+  const id = req.params.id;
+  if (id === "default.png") return res.sendFile(path.join(__dirname, "public", "default.png"));
+  try {
+    bucket.openDownloadStream(ObjectId(id)).pipe(res);
+  } catch {
+    res.sendFile(path.join(__dirname, "public", "default.png"));
+  }
+});
+
+// === Socket.IO ===
 const rooms = {};
 io.on('connection', (socket) => {
   socket.lastMessageAt = 0;
 
   socket.on('join-room', async ({ room, username }, ack) => {
     room = room || "chat";
-
     const user = await User.findOne({ username });
     if (!user) return ack && ack({ ok: false });
 
