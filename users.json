@@ -1,16 +1,19 @@
-   {
+{
   "usuarios": {
     "Flaz": {
       "password": "sysadmin674",
-      "rol": "admin"
+      "rol": "admin",
+      "avatar": "/avatars/default.png"
     },
     "Jahdiel": {
       "password": "Test",
-      "rol": "user"
+      "rol": "user",
+      "avatar": "/avatars/default.png"
     },
     "Esteyci": {
       "password": "contraseña",
-      "rol": "admin"
+      "rol": "admin",
+      "avatar": "/avatars/default.png"
     }
   },
   "baneados": []
