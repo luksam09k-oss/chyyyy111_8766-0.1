@@ -2,44 +2,44 @@ const socket = io();
 const username = localStorage.getItem("username");
 const rol = localStorage.getItem("rol");
 
-// Unirse a la sala
+// Unirse al chat
 socket.emit("join-room", { room: "chat", username, rol }, (res) => {
   if (!res.ok) {
-    if (res.reason === "banned") alert("Has sido baneado y no puedes entrar");
-    else alert("No puedes entrar al chat");
+    alert("No puedes entrar");
     return;
   }
   res.history.forEach(addMessage);
 });
 
-// Escuchar eventos
+// Eventos
 socket.on("new-message", addMessage);
 socket.on("system-message", addMessage);
 socket.on("clear-chat", () => document.getElementById("messages").innerHTML = "");
+socket.on("user-list", renderUserList);
 
-// Render lista de usuarios (con highlight para mí)
-socket.on("user-list", (users) => {
+// Render usuarios conectados
+function renderUserList(users) {
   const side = document.getElementById("user-list");
   side.innerHTML = "";
+
   users.forEach(u => {
     const div = document.createElement("div");
     div.classList.add("user-entry");
 
-    if (u.username === username) {
-      div.classList.add("meUser");
-    }
+    if (u.username === username) div.classList.add("meUser");
 
     div.innerHTML = `
       <img src="/avatar/${u.avatarId || "default.png"}">
-      <span>${u.username}</span>
+      <span style="color:${u.rol === "admin" ? "#ff4444" : "#c084ff"}">
+        ${u.username}
+      </span>
     `;
 
-    div.onclick = () => alert(`Perfil de ${u.username}`);
     side.appendChild(div);
   });
-});
+}
 
-// Enviar mensaje con Enter
+// Enviar con Enter
 document.getElementById("msgBox").addEventListener("keypress", (e) => {
   if (e.key === "Enter") sendMsg();
 });
@@ -52,37 +52,30 @@ function sendMsg() {
   const msg = box.value.trim();
   if (!msg) return;
 
-  socket.emit("send-message", msg, (res) => {
-    if (!res.ok) alert("Error enviando mensaje");
-  });
-
+  socket.emit("send-message", msg);
   box.value = "";
 }
 
-// ----------------------------
-// RENDER DE MENSAJES
-// ----------------------------
+// Render mensajes
 function addMessage(m) {
   const box = document.getElementById("messages");
   const line = document.createElement("div");
 
   line.classList.add("message");
 
-  // clasificar si es mío o del otro
-  if (m.user === username) {
-    line.classList.add("me");
-  } else {
-    line.classList.add("other");
-  }
+  if (m.user === username) line.classList.add("me");
+  else line.classList.add("other");
 
   if (!m.user) {
     line.innerHTML = `<div class="systemMsg">${m.text}</div>`;
   } else {
+    const colorClass = m.rol === "admin" ? "nameAdmin" : "nameNormal";
+
     line.innerHTML = `
       <div class="msgBubble">
         <img src="/avatar/${m.avatarId || "default.png"}">
         <div class="textBlock">
-          <b>${m.user}</b>
+          <b class="${colorClass}">${m.user}</b>
           <span>${m.text}</span>
         </div>
       </div>
@@ -114,8 +107,8 @@ document.getElementById("changeAvatarBtn").addEventListener("click", async () =>
 
   if (data.ok) {
     alert("Avatar actualizado!");
-    socket.emit("join-room", { room: "chat", username, rol }, () => {});
+    socket.emit("request-userlist");
   } else {
-    alert("Error al subir avatar");
+    alert("Error subiendo imagen");
   }
 });
