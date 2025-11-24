@@ -1,15 +1,15 @@
 // ===============================
-// server.js ADMIN + AVATARES
+// server.js FINAL (LOGIN + AVATARES + ADMIN + CHAT)
 // ===============================
 const express = require("express");
 const mongoose = require("mongoose");
 const http = require("http");
 const socketio = require("socket.io");
 const path = require("path");
-const crypto = require("crypto");
 const multer = require("multer");
 const { GridFsStorage } = require("multer-gridfs-storage");
 const cors = require("cors");
+const bcrypt = require("bcrypt");
 
 const User = require("./User");
 const Message = require("./Message");
@@ -21,7 +21,6 @@ const io = socketio(server);
 app.use(express.json());
 app.use(cors());
 app.use(express.static("public"));
-
 
 // ==================================================
 // Mongo + GridFS
@@ -39,7 +38,6 @@ conn.once("open", () => {
     console.log("MongoDB + GridFS listo");
 });
 
-// GridFS storage
 const storage = new GridFsStorage({
     url: mongoURI,
     file: (req, file) => ({
@@ -47,8 +45,36 @@ const storage = new GridFsStorage({
         bucketName: "uploads"
     })
 });
+
 const upload = multer({ storage });
 
+// ==================================================
+// LOGIN API (Faltaba esto!)
+// ==================================================
+app.post("/login", async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        const user = await User.findOne({ username });
+        if (!user) return res.json({ ok: false, msg: "Usuario no existe" });
+
+        const match = await bcrypt.compare(password, user.password);
+        if (!match) return res.json({ ok: false, msg: "Contraseña incorrecta" });
+
+        if (user.banned) return res.json({ ok: false, msg: "BANEADO" });
+
+        res.json({
+            ok: true,
+            username: user.username,
+            rol: user.rol,
+            avatarId: user.avatarId
+        });
+
+    } catch (e) {
+        console.log(e);
+        res.json({ ok: false, msg: "Error interno" });
+    }
+});
 
 // ==================================================
 // SUBIR AVATAR
@@ -70,7 +96,6 @@ app.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
     }
 });
 
-
 // ==================================================
 // SERVIR AVATAR
 // ==================================================
@@ -91,11 +116,10 @@ app.get("/avatar/:filename", async (req, res) => {
     }
 });
 
-
 // ==================================================
-// SOCKET.IO CHAT REAL
+// SOCKET.IO — CHAT REAL
 // ==================================================
-let online = {}; // username → user info
+let online = {}; // Lista de usuarios conectados
 
 io.on("connection", (socket) => {
 
@@ -120,8 +144,8 @@ io.on("connection", (socket) => {
             };
 
             const history = await Message.find().sort({ time: 1 }).limit(50).lean();
-            cb({ ok: true, history });
 
+            cb({ ok: true, history });
             io.emit("user-list", Object.values(online));
 
         } catch {
@@ -129,14 +153,11 @@ io.on("connection", (socket) => {
         }
     });
 
-
-    // ==================================================
-    // ENVIAR MENSAJE + COMANDOS ADMIN
-    // ==================================================
+    // ENVIAR MENSAJE + ADMIN COMMANDS
     socket.on("send-message", async (msg, cb) => {
         if (!socket.username) return cb({ ok: false });
 
-        // ---------- DETECTAR COMANDOS ----------
+        // ---------- COMANDOS ADMIN ----------
         if (msg.startsWith("/")) {
 
             if (socket.rol !== "admin") {
@@ -147,7 +168,6 @@ io.on("connection", (socket) => {
             const [cmd, target] = msg.split(" ");
 
             switch (cmd) {
-
                 case "/clear":
                     await Message.deleteMany({});
                     io.emit("clear-chat");
@@ -179,6 +199,7 @@ io.on("connection", (socket) => {
             rol: socket.rol,
             avatarId: socket.avatarId
         });
+
         await m.save();
 
         io.emit("new-message", {
@@ -191,7 +212,6 @@ io.on("connection", (socket) => {
         cb({ ok: true });
     });
 
-
     // DESCONECTAR
     socket.on("disconnect", () => {
         if (socket.username) {
@@ -200,7 +220,6 @@ io.on("connection", (socket) => {
         }
     });
 });
-
 
 // ==================================================
 // SERVIDOR
