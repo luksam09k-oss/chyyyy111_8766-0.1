@@ -37,9 +37,9 @@
     .user-entry {
       display: flex;
       align-items: center;
-      padding: 5px;
-      margin-bottom: 5px;
-      border-radius: 4px;
+      padding: 6px;
+      margin-bottom: 6px;
+      border-radius: 5px;
       cursor: pointer;
       transition: 0.2s;
     }
@@ -49,13 +49,13 @@
     }
 
     .user-entry img {
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
-      margin-right: 5px;
+      margin-right: 6px;
     }
 
-    /* mi propio usuario resaltado */
+    /* mi usuario */
     .meUser {
       background: #1f6f36 !important;
     }
@@ -72,14 +72,14 @@
       flex: 1;
       overflow-y: auto;
       background: #36393f;
-      padding: 10px;
-      border-radius: 5px;
+      padding: 15px;
+      border-radius: 6px;
     }
 
     .message {
       width: 100%;
       display: flex;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       animation: fadeIn 0.25s ease-out;
     }
 
@@ -93,37 +93,41 @@
 
     .msgBubble {
       background: #2f3136;
-      padding: 8px;
-      border-radius: 8px;
-      max-width: 60%;
+      padding: 12px;
+      border-radius: 10px;
+      max-width: 65%;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      font-size: 15px;
     }
 
     .message.me .msgBubble {
-      background: #3f51b5;
+      background: #4854e8;
     }
 
     .message.other .msgBubble {
-      background: #2b2d31;
+      background: #2c2f34;
     }
 
     .msgBubble img {
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
     }
 
-    .textBlock b {
-      display: block;
-      margin-bottom: 3px;
-      color: #fff;
+    /* colores de nombres */
+    .nameAdmin {
+      color: #ff4444;
+    }
+
+    .nameNormal {
+      color: #c084ff;
     }
 
     .systemMsg {
       background: #444;
-      padding: 6px 10px;
+      padding: 6px 12px;
       border-radius: 6px;
       margin: auto;
       opacity: 0.8;
@@ -131,7 +135,7 @@
 
     /* Animación */
     @keyframes fadeIn {
-      0% { opacity: 0; transform: translateY(6px); }
+      0% { opacity: 0; transform: translateY(8px); }
       100% { opacity: 1; transform: translateY(0); }
     }
 
@@ -143,16 +147,16 @@
 
     #msgBox {
       flex: 1;
-      padding: 10px;
-      border-radius: 5px;
+      padding: 12px;
+      border-radius: 6px;
       border: none;
-      font-size: 14px;
+      font-size: 15px;
     }
 
     #sendBtn {
-      padding: 10px 15px;
+      padding: 12px 18px;
       margin-left: 5px;
-      border-radius: 5px;
+      border-radius: 6px;
       border: none;
       background: #7289da;
       color: white;
