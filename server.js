@@ -119,7 +119,7 @@ io.on("connection", (socket) => {
                 avatarId: user.avatarId
             };
 
-            const history = await Message.find().sort({ time: -1 }).limit(50).lean();
+            const history = await Message.find().sort({ time: 1 }).limit(50).lean();
             cb({ ok: true, history });
 
             io.emit("user-list", Object.values(online));
