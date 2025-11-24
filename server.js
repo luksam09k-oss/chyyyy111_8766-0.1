@@ -1,5 +1,5 @@
 // ===============================
-// server.js ADMIN + AVATARES (CORREGIDO)
+// server.js ADMIN + AVATARES
 // ===============================
 const express = require("express");
 const mongoose = require("mongoose");
@@ -115,7 +115,7 @@ app.get("/avatar/:filename", async (req, res) => {
 });
 
 // ==================================================
-// SOCKET.IO CHAT REAL
+// SOCKET.IO CHAT
 // ==================================================
 let online = {}; // username → user info
 
@@ -155,19 +155,24 @@ io.on("connection", (socket) => {
 
     // ENVIAR MENSAJE + COMANDOS
     socket.on("send-message", async (msg, cb) => {
-        if (!socket.username) return cb({ ok: false });
+        if (!socket.username) {
+            if (cb) cb({ ok: false });
+            return;
+        }
 
-        // comandos
+        // COMANDOS
         if (msg.startsWith("/")) {
 
             if (socket.rol !== "admin") {
                 socket.emit("system-message", { text: "No tienes permisos." });
-                return cb({ ok: true });
+                if (cb) cb({ ok: true });
+                return;
             }
 
             const [cmd, target] = msg.split(" ");
 
             switch (cmd) {
+
                 case "/clear":
                     await Message.deleteMany({});
                     io.emit("clear-chat");
@@ -189,16 +194,18 @@ io.on("connection", (socket) => {
                     socket.emit("system-message", { text: "Comando desconocido" });
             }
 
-            return cb({ ok: true });
+            if (cb) cb({ ok: true });
+            return;
         }
 
-        // mensaje normal
+        // MENSAJE NORMAL
         const m = new Message({
             user: socket.username,
             text: msg,
             rol: socket.rol,
             avatarId: socket.avatarId
         });
+
         await m.save();
 
         io.emit("new-message", {
@@ -208,7 +215,7 @@ io.on("connection", (socket) => {
             avatarId: socket.avatarId
         });
 
-        cb({ ok: true });
+        if (cb) cb({ ok: true });
     });
 
     // DESCONECTAR
