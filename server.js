@@ -1,5 +1,5 @@
 // ===============================
-// server.js ADMIN + AVATARES
+// server.js ADMIN + AVATARES (CORREGIDO)
 // ===============================
 const express = require("express");
 const mongoose = require("mongoose");
@@ -154,8 +154,8 @@ io.on("connection", (socket) => {
     });
 
     // ENVIAR MENSAJE + COMANDOS
-    socket.on("send-message", (msg) => {
-    if (!socket.username) return;
+    socket.on("send-message", async (msg, cb) => {
+        if (!socket.username) return cb({ ok: false });
 
         // comandos
         if (msg.startsWith("/")) {
