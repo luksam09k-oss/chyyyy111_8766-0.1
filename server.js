@@ -1,151 +1,126 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const mongoose = require("mongoose");
-const multer = require("multer");
-const { GridFsStorage } = require("multer-gridfs-storage");
-const crypto = require("crypto");
-const path = require("path");
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const mongoose = require('mongoose');
+const multer = require('multer');
+const { GridFsStorage } = require('multer-gridfs-storage');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
-app.use(express.static("public"));
+// === MongoDB ===
+mongoose.connect(
+  "mongodb+srv://luksam09k_db_user:D7mcreChPJu9HFBt@cluster0.3bnnbke.mongodb.net/ChatDB?retryWrites=true&w=majority"
+);
 
-// ===== MongoDB =====
-mongoose.connect("mongodb+srv://luksam09k_db_user:D7mcreChPJu9HFBt@cluster0.3bnnbke.mongodb.net/ChatDB?retryWrites=true&w=majority");
 const conn = mongoose.connection;
-let gfs;
+conn.once("open", () => console.log("MongoDB conectado"));
 
-conn.once("open", () => {
-  console.log("MongoDB conectado");
-  gfs = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: "avatars" });
-});
-
-// ===== Multer GridFS =====
-const storage = new GridFsStorage({
-  url: "mongodb+srv://luksam09k_db_user:D7mcreChPJu9HFBt@cluster0.3bnnbke.mongodb.net/ChatDB",
-  file: (req, file) => {
-    return new Promise((resolve, reject) => {
-      crypto.randomBytes(16, (err, buf) => {
-        if (err) return reject(err);
-        const filename = buf.toString("hex") + path.extname(file.originalname);
-        resolve({ filename, bucketName: "avatars" });
-      });
-    });
-  }
-});
-const upload = multer({ storage });
-
-// ===== Schemas =====
+// === Schemas ===
 const userSchema = new mongoose.Schema({
   username: String,
   password: String,
   rol: String,
-  avatarId: String
+  avatarId: { type: String, default: null }
 });
 const User = mongoose.model("User", userSchema);
 
 const messageSchema = new mongoose.Schema({
   user: String,
   text: String,
-  time: Date,
-  avatarId: String
+  time: Date
 });
 const Message = mongoose.model("Message", messageSchema);
 
-// ===== Rutas =====
+// === GridFS ===
+const storage = new GridFsStorage({
+  url: "mongodb+srv://luksam09k_db_user:D7mcreChPJu9HFBt@cluster0.3bnnbke.mongodb.net/ChatDB",
+  file: (req, file) => ({
+    filename: `${Date.now()}_${file.originalname}`
+  })
+});
+const upload = multer({ storage });
 
-// Login
-app.post("/login", async (req, res) => {
+// === Express ===
+app.use(express.static('public'));
+app.use(express.json());
+
+// === LOGIN ===
+app.post('/login', async (req, res) => {
   const { user, pass } = req.body;
-  const dbUser = await User.findOne({ username: user });
-  if (!dbUser || dbUser.password !== pass) return res.json({ ok: false });
-  res.json({ ok: true, user: dbUser.username, rol: dbUser.rol, avatarId: dbUser.avatarId });
+  const u = await User.findOne({ username: user });
+  if (!u || u.password !== pass) return res.json({ ok: false });
+  res.json({ ok: true, user: u.username, rol: u.rol, avatarId: u.avatarId });
 });
 
-// Subir avatar
+// === AVATAR UPLOAD ===
 app.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
-  const username = req.body.username;
-  const file = req.file;
-  if (!username || !file) return res.status(400).json({ ok: false });
-
-  const user = await User.findOne({ username });
-  if (!user) return res.status(404).json({ ok: false });
-
-  user.avatarId = file.id.toString();
-  await user.save();
-
-  io.emit("update-user", { username, avatarId: user.avatarId });
-  res.json({ ok: true, avatarId: user.avatarId });
+  const { username } = req.body;
+  const fileId = req.file.id;
+  await User.updateOne({ username }, { avatarId: fileId });
+  res.json({ ok: true, fileId });
 });
 
-// Obtener avatar
-app.get("/avatar/:id", (req, res) => {
-  try {
-    const fileId = new mongoose.Types.ObjectId(req.params.id);
-    gfs.find({ _id: fileId }).toArray((err, files) => {
-      if (!files || files.length === 0) return res.status(404).send("No file found");
-      gfs.openDownloadStream(fileId).pipe(res);
-    });
-  } catch {
-    res.status(400).send("Invalid ID");
-  }
-});
-
-// ===== Socket.io =====
+// === SOCKET.IO ===
 const rooms = {};
+io.on('connection', (socket) => {
+  socket.lastMessageAt = 0;
 
-io.on("connection", (socket) => {
-
-  socket.on("join-room", async ({ room, username, rol }, ack) => {
+  socket.on('join-room', async ({ room, username }, ack) => {
     room = room || "chat";
-    socket.join(room);
-    socket.username = username;
-    socket.rol = rol;
 
-    if (!rooms[room]) rooms[room] = new Set();
-    rooms[room].add(username);
-
-    // historial de mensajes
-    const history = await Message.find().sort({ time: 1 }).limit(50).lean();
-    ack && ack({ ok: true, history });
-
-    // lista de usuarios
-    const users = await User.find().lean();
-    io.to(room).emit("user-list", users.map(u => ({
-      username: u.username,
-      rol: u.rol,
-      avatarId: u.avatarId || null
-    })));
-  });
-
-  socket.on("send-message", async (text, ack) => {
-    const username = socket.username;
     const user = await User.findOne({ username });
     if (!user) return ack && ack({ ok: false });
 
-    const msg = new Message({
-      user: username,
-      text,
-      time: new Date(),
-      avatarId: user.avatarId
-    });
-    await msg.save();
+    socket.join(room);
+    socket.roomName = room;
+    socket.username = username;
 
-    io.emit("new-message", msg);
+    if (!rooms[room]) rooms[room] = { users: new Map() };
+    rooms[room].users.set(socket.id, user);
+
+    const allMessages = await Message.find().sort({ time: 1 }).lean();
+
+    io.to(room).emit('user-list', Array.from(rooms[room].users.values()).map(u => ({
+      username: u.username,
+      rol: u.rol,
+      avatarId: u.avatarId
+    })));
+
+    ack && ack({ ok: true, history: allMessages });
+  });
+
+  socket.on('send-message', async (text, ack) => {
+    const now = new Date();
+    if (now - (socket.lastMessageAt || 0) < 800)
+      return ack && ack({ ok: false, reason: 'rate_limited' });
+    socket.lastMessageAt = now;
+
+    const user = await User.findOne({ username: socket.username });
+    if (!user) return ack && ack({ ok: false });
+
+    const msg = { user: user.username, text, time: now };
+    await Message.create(msg);
+
+    io.to(socket.roomName).emit('new-message', msg);
     ack && ack({ ok: true });
   });
 
-  socket.on("disconnect", () => {
-    for (let room in rooms) {
-      rooms[room].delete(socket.username);
-      io.to(room).emit("user-list", Array.from(rooms[room]));
+  socket.on('disconnect', () => {
+    const room = socket.roomName;
+    if (room && rooms[room]) {
+      rooms[room].users.delete(socket.id);
+      io.to(room).emit('user-list', Array.from(rooms[room].users.values()).map(u => ({
+        username: u.username,
+        rol: u.rol,
+        avatarId: u.avatarId
+      })));
     }
   });
 });
 
-server.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
+server.listen(PORT, () => console.log(`Servidor escuchando en http://localhost:${PORT}`));
