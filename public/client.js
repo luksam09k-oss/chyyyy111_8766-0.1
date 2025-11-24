@@ -1,94 +1,82 @@
-const socket = io();
+const socket = io("/", { query: { username: localStorage.getItem("username") } });
+
 const username = localStorage.getItem("username");
 const rol = localStorage.getItem("rol");
 let avatarId = localStorage.getItem("avatarId") || null;
 
-// Usuarios conectados
-const usuarios = {}; // Guardaremos avatarId de cada usuario
-
-socket.emit("join-room", { room: "chat", username, rol }, (res) => {
-  if (!res.ok) {
-    alert("No puedes entrar (baneado o sala llena)");
-    location.href = "/login.html";
-    return;
-  }
-
-  avatarId = res.avatarId || null;
-  localStorage.setItem("avatarId", avatarId);
-  usuarios[username] = { avatarId, rol };
-
-  res.history.forEach(m => addMessage(m));
-});
-
-// ======= SOCKETS =======
-socket.on("new-message", addMessage);
-
-socket.on("system-message", (m) => {
-  addMessage({ user: "SYSTEM", text: m.text, avatarId: null, time: m.time, rol: "system" });
-});
-
-socket.on("clear-chat", () => {
-  document.getElementById("messages").innerHTML = "";
-});
-
+// Lateral usuarios
 socket.on("user-list", (users) => {
   const list = document.getElementById("user-list");
   list.innerHTML = "";
   users.forEach(u => {
-    const avatar = usuarios[u]?.avatarId ? `/avatar/${usuarios[u].avatarId}` : '/default-avatar.png';
-    const rol = usuarios[u]?.rol || "user";
+    const avatar = u.avatarId ? `/avatar/${u.avatarId}` : "/default-avatar.png";
     const div = document.createElement("div");
-    div.innerHTML = `<img src="${avatar}"> ${u}`;
+    div.innerHTML = `<img src="${avatar}"> ${u.username}`;
     div.onclick = () => openProfile(u);
     list.appendChild(div);
   });
 });
 
-// ======= FUNCIONES =======
+socket.on("update-user", (u) => {
+  if (u.username === username) avatarId = u.avatarId;
+  socket.emit("join-room", { room: "chat", username, rol }, () => {});
+});
+
+socket.on("new-message", (m) => addMessage(m));
+
 function addMessage(m) {
   const box = document.getElementById("messages");
-  const avatarUrl = m.avatarId ? `/avatar/${m.avatarId}` : '/default-avatar.png';
+  const avatar = m.avatarId ? `/avatar/${m.avatarId}` : "/default-avatar.png";
   const div = document.createElement("div");
   div.classList.add("message");
-  div.classList.add(m.user.includes("(ADMIN)") ? "admin" : "user");
-
-  div.innerHTML = `
-    <img src="${avatarUrl}" onclick="openProfile('${m.user}')">
-    <b>${m.user}:</b> ${m.text}
-  `;
+  div.innerHTML = `<img src="${avatar}"> <b>${m.user}:</b> ${m.text}`;
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
-
-  // Guardar avatarId
-  if (!usuarios[m.user] && m.avatarId) usuarios[m.user] = { avatarId: m.avatarId, rol: m.user.includes("(ADMIN)") ? "admin" : "user" };
 }
 
 function sendMsg() {
   const msg = document.getElementById("msgBox").value.trim();
   if (!msg) return;
-  socket.emit("send-message", msg, (res) => {
-    if (!res.ok) alert("Error enviando mensaje");
-  });
+  socket.emit("send-message", msg, (res) => { if (!res.ok) alert("Error"); });
   document.getElementById("msgBox").value = "";
 }
 
-// Enter para enviar
-document.getElementById("msgBox").addEventListener("keypress", (e) => {
+document.getElementById("msgBox").addEventListener("keypress", e => {
   if (e.key === "Enter") sendMsg();
 });
 
 function logout() {
-  localStorage.removeItem("username");
-  localStorage.removeItem("rol");
-  localStorage.removeItem("avatarId");
-  socket.disconnect();
+  localStorage.clear();
   location.href = "/login.html";
 }
 
-// Abrir perfil
-function openProfile(user) {
-  const data = usuarios[user];
-  if (!data) return alert("Usuario no encontrado");
-  const avatarUrl = data.avatarId ? `/avatar/${data.avatarId}` : "/default-avatar.png";
-  alert(`Perfil de ${user}\nAvatar: ${avatarUrl}`);
+function openProfile(u) {
+  const avatar = u.avatarId ? `/avatar/${u.avatarId}` : "/default-avatar.png";
+  const form = `
+    <h3>${u.username}</h3>
+    <img src="${avatar}" style="width:80px;height:80px;border-radius:50%;"><br>
+    ${u.username === username ? `<input type="file" id="fileUpload"><button onclick="uploadAvatar()">Subir</button>` : ""}
+  `;
+  const modal = document.createElement("div");
+  modal.innerHTML = form;
+  modal.style = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#202225;padding:20px;border-radius:10px;color:white;z-index:1000;";
+  modal.id = "modal";
+  document.body.appendChild(modal);
+}
+
+function uploadAvatar() {
+  const file = document.getElementById("fileUpload").files[0];
+  if (!file) return alert("Selecciona una imagen");
+  const data = new FormData();
+  data.append("avatar", file);
+  data.append("username", username);
+  fetch("/upload-avatar", { method: "POST", body: data })
+    .then(res => res.json())
+    .then(res => {
+      if (res.ok) {
+        avatarId = res.avatarId;
+        localStorage.setItem("avatarId", avatarId);
+        document.getElementById("modal")?.remove();
+      }
+    });
 }
