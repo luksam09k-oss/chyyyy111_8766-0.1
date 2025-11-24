@@ -154,8 +154,8 @@ io.on("connection", (socket) => {
     });
 
     // ENVIAR MENSAJE + COMANDOS
-    socket.on("send-message", async (msg, cb) => {
-        if (!socket.username) return cb({ ok: false });
+    socket.on("send-message", (msg) => {
+    if (!socket.username) return;
 
         // comandos
         if (msg.startsWith("/")) {
