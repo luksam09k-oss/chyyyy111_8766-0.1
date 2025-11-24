@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <style>
+    body {
+      background:#1b1b1b;
+      font-family:Arial;
+      color:white;
+      display:flex;
+      height:100vh;
+      justify-content:center;
+      align-items:center;
+    }
+    .box {
+      background:#222;
+      padding:25px;
+      border-radius:10px;
+      width:300px;
+    }
+    input,button {
+      width:100%;
+      padding:10px;
+      margin:10px 0;
+      border-radius:5px;
+      border:none;
+    }
+    button {
+      background:#4caf50;
+      color:white;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h2>Iniciar Sesión</h2>
+  <input id="user" placeholder="Usuario">
+  <input id="pass" placeholder="Contraseña" type="password">
+  <button onclick="login()">Entrar</button>
+  <p id="msg"></p>
+</div>
+
+<script>
+async function login() {
+  const user = document.getElementById("user").value.trim();
+  const pass = document.getElementById("pass").value.trim();
+
+  const res = await fetch("/login", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({user, pass})
+  });
+
+  const data = await res.json();
+
+  if (!data.ok) {
+    document.getElementById("msg").innerText = "Credenciales incorrectas";
+    return;
+  }
+
+  localStorage.setItem("username", data.user);
+  localStorage.setItem("rol", data.rol);
+
+  location.href = "/";
+}
+</script>
+
+</body>
+</html>
