@@ -1,195 +1,170 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const mongoose = require('mongoose');
-const multer = require('multer');
-const { GridFsStorage } = require('multer-gridfs-storage');
-const { GridFSBucket, ObjectId } = require('mongodb');
-const path = require('path');
+// ===============================
+// server.js FINAL
+// ===============================
+const express = require("express");
+const mongoose = require("mongoose");
+const http = require("http");
+const socketio = require("socket.io");
+const path = require("path");
+const crypto = require("crypto");
+const multer = require("multer");
+const { GridFsStorage } = require("multer-gridfs-storage");
+const cors = require("cors");
+
+const User = require("./User");
+const Message = require("./Message");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
-const PORT = process.env.PORT || 3000;
+const io = socketio(server);
 
-// === MongoDB ===
-const mongoURL = "mongodb+srv://luksam09k_db_user:D7mcreChPJu9HFBt@cluster0.3bnnbke.mongodb.net/ChatDB?retryWrites=true&w=majority";
-mongoose.connect(mongoURL);
-const conn = mongoose.connection;
+app.use(express.json());
+app.use(cors());
+app.use(express.static("public"));
 
-// === Schemas ===
-const userSchema = new mongoose.Schema({
-  username: String,
-  password: String,
-  rol: { type: String, default: "user" },
-  avatarId: { type: String, default: null },
-  banned: { type: Boolean, default: false }
+
+// ==================================================
+// Mongo + GridFS
+// ==================================================
+const mongoURI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/chatroom";
+
+const conn = mongoose.createConnection(mongoURI);
+mongoose.connect(mongoURI);
+
+let gfs;
+conn.once("open", () => {
+    gfs = new mongoose.mongo.GridFSBucket(conn.db, {
+        bucketName: "uploads"
+    });
+    console.log("MongoDB + GridFS listo");
 });
-const User = mongoose.model("User", userSchema);
 
-const messageSchema = new mongoose.Schema({
-  room: { type: String, default: "chat" },
-  user: String,
-  text: String,
-  time: { type: Date, default: Date.now }
-});
-const Message = mongoose.model("Message", messageSchema);
-
-// === GridFS para avatars ===
-const storage = new GridFsStorage({ 
-  url: mongoURL, 
-  file: (req, file) => ({ filename: `${Date.now()}_${file.originalname}` }) 
+// GridFS storage
+const storage = new GridFsStorage({
+    url: mongoURI,
+    file: (req, file) => ({
+        filename: Date.now() + "_" + file.originalname,
+        bucketName: "uploads"
+    })
 });
 const upload = multer({ storage });
-let bucket;
-conn.once('open', () => {
-  console.log("MongoDB conectado");
-  bucket = new GridFSBucket(conn.db, { bucketName: "avatars" });
-});
 
-app.use(express.static('public'));
-app.use(express.json());
 
-// === Login ===
-app.post('/login', async (req, res) => {
-  const { user, pass } = req.body;
-  const u = await User.findOne({ username: user });
-  if (!u || u.password !== pass) return res.json({ ok: false });
-  if (u.banned) return res.json({ ok: false, banned: true });
-  res.json({ ok: true, user: u.username, rol: u.rol, avatarId: u.avatarId });
-});
-
-// === Upload avatar ===
+// ==================================================
+// SUBIR AVATAR
+// ==================================================
 app.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
-  const { username } = req.body;
-  await User.updateOne({ username }, { avatarId: req.file.id });
-  res.json({ ok: true, fileId: req.file.id });
-});
+    try {
+        const username = req.body.username;
 
-// === Servir avatars ===
-app.get("/avatar/:id", (req, res) => {
-  const id = req.params.id;
-  if (!id || id === "default.png") return res.sendFile(path.join(__dirname, "public", "default.png"));
-  try {
-    bucket.openDownloadStream(ObjectId(id)).pipe(res);
-  } catch {
-    res.sendFile(path.join(__dirname, "public", "default.png"));
-  }
-});
+        await User.findOneAndUpdate(
+            { username },
+            { avatarId: req.file.filename }
+        );
 
-// === Socket.IO ===
-const rooms = {};
+        res.json({ ok: true, avatarId: req.file.filename });
 
-io.on('connection', (socket) => {
-  socket.lastMessageAt = 0;
-
-  socket.on('join-room', async ({ room, username, rol }, ack) => {
-    room = room || "chat";
-
-    const user = await User.findOne({ username });
-    if (!user) return ack && ack({ ok: false });
-
-    if (user.banned) return ack && ack({ ok: false, reason: "banned" });
-
-    socket.join(room);
-    socket.username = user.username;
-    socket.rol = user.rol;
-    socket.avatarId = user.avatarId;
-    socket.roomName = room; // 🔑 ahora está definido
-
-    if (!rooms[room]) rooms[room] = { users: new Map(), history: [] };
-
-    // Enviar historial de mensajes solo si la sala aún no lo tiene
-    if (!rooms[room].history.length) {
-      const messages = await Message.find({ room }).sort({ time: 1 }).lean();
-      rooms[room].history = messages;
+    } catch (e) {
+        console.log(e);
+        res.json({ ok: false });
     }
+});
 
-    rooms[room].users.set(socket.id, socket);
 
-    // Emitir lista de usuarios
-    io.to(room).emit('user-list', Array.from(rooms[room].users.values()).map(u => ({
-      username: u.username,
-      rol: u.rol,
-      avatarId: u.avatarId
-    })));
+// ==================================================
+// SERVIR AVATAR
+// ==================================================
+app.get("/avatar/:filename", async (req, res) => {
+    try {
+        const file = await conn.db
+            .collection("uploads.files")
+            .findOne({ filename: req.params.filename });
 
-    ack && ack({ ok: true, history: rooms[room].history });
-  });
-
-  socket.on('send-message', async (text, ack) => {
-    const now = new Date();
-    if (now - (socket.lastMessageAt || 0) < 500) return ack && ack({ ok: false, reason: "rate_limited" });
-    socket.lastMessageAt = now;
-
-    const room = socket.roomName;
-    if (!room || !rooms[room]) return;
-
-    // === Comandos admin ===
-    if (socket.rol === "admin" && text.startsWith("/")) {
-      const [cmd, arg] = text.trim().split(" ");
-
-      if (cmd === "/kick") {
-        for (const [id, u] of rooms[room].users.entries()) {
-          if (u.username === arg) {
-            io.to(id).emit("system-message", { text: "Has sido expulsado por un admin.", time: Date.now() });
-            io.sockets.sockets.get(id)?.disconnect(true);
-            break;
-          }
+        if (!file) {
+            return res.sendFile(path.join(__dirname, "public", "default.png"));
         }
-        return ack && ack({ ok: true });
-      }
 
-      if (cmd === "/ban") {
-        await User.updateOne({ username: arg }, { banned: true });
-        for (const [id, u] of rooms[room].users.entries()) {
-          if (u.username === arg) {
-            io.to(id).emit("system-message", { text: "Has sido baneado.", time: Date.now() });
-            io.sockets.sockets.get(id)?.disconnect(true);
-            break;
-          }
-        }
-        return ack && ack({ ok: true });
-      }
+        gfs.openDownloadStreamByName(req.params.filename).pipe(res);
 
-      if (cmd === "/unban") {
-        await User.updateOne({ username: arg }, { banned: false });
-        return ack && ack({ ok: true });
-      }
-
-      if (cmd === "/clear") {
-        rooms[room].history = [];
-        io.to(room).emit("clear-chat");
-        return ack && ack({ ok: true });
-      }
-
-      if (cmd === "/announce") {
-        const msgText = text.slice(9).trim();
-        if (!msgText) return;
-        io.to(room).emit("system-message", { text: `[ANUNCIO] ${msgText}`, time: Date.now() });
-        return ack && ack({ ok: true });
-      }
+    } catch (e) {
+        return res.sendFile(path.join(__dirname, "public", "default.png"));
     }
-
-    // Mensaje normal
-    const msg = { room, user: socket.username, text, time: now };
-    rooms[room].history.push(msg);
-    await Message.create(msg);
-    io.to(room).emit('new-message', msg);
-    ack && ack({ ok: true });
-  });
-
-  socket.on('disconnect', () => {
-    const room = socket.roomName;
-    if (room && rooms[room]) {
-      rooms[room].users.delete(socket.id);
-      io.to(room).emit('user-list', Array.from(rooms[room].users.values()).map(u => ({
-        username: u.username,
-        rol: u.rol,
-        avatarId: u.avatarId
-      })));
-    }
-  });
 });
 
-server.listen(PORT, () => console.log(`Servidor escuchando en http://localhost:${PORT}`));
+
+// ==================================================
+// SOCKET.IO CHAT REAL
+// ==================================================
+let online = {}; // username → user info
+
+io.on("connection", (socket) => {
+    console.log("Nuevo cliente conectado");
+
+    // JOIN ROOM
+    socket.on("join-room", async ({ room, username, rol }, cb) => {
+        try {
+            const user = await User.findOne({ username });
+            if (!user) return cb({ ok: false });
+
+            socket.join(room);
+            socket.username = username;
+            socket.rol = user.rol || rol;
+            socket.avatarId = user.avatarId;
+
+            online[username] = {
+                username,
+                rol: user.rol,
+                avatarId: user.avatarId
+            };
+
+            // historial
+            const history = await Message.find().limit(50).lean();
+
+            cb({ ok: true, history });
+
+            io.emit("user-list", Object.values(online));
+
+        } catch {
+            cb({ ok: false });
+        }
+    });
+
+    // ENVIAR MENSAJE
+    socket.on("send-message", async (msg, cb) => {
+        if (!socket.username) return cb({ ok: false });
+
+        const m = new Message({
+            user: socket.username,
+            text: msg,
+            rol: socket.rol,
+            avatarId: socket.avatarId
+        });
+        await m.save();
+
+        io.emit("new-message", {
+            user: socket.username,
+            text: msg,
+            rol: socket.rol,
+            avatarId: socket.avatarId
+        });
+
+        cb({ ok: true });
+    });
+
+    // DESCONECTAR
+    socket.on("disconnect", () => {
+        if (socket.username) {
+            delete online[socket.username];
+            io.emit("user-list", Object.values(online));
+        }
+    });
+});
+
+
+// ==================================================
+// SERVIDOR
+// ==================================================
+const PORT = process.env.PORT || 10000;
+server.listen(PORT, () =>
+    console.log("Servidor corriendo en http://localhost:" + PORT)
+);
