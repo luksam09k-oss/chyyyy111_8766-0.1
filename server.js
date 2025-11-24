@@ -22,19 +22,24 @@ const userSchema = new mongoose.Schema({
   username: String,
   password: String,
   rol: { type: String, default: "user" },
-  avatarId: { type: String, default: null }
+  avatarId: { type: String, default: null },
+  banned: { type: Boolean, default: false }
 });
 const User = mongoose.model("User", userSchema);
 
 const messageSchema = new mongoose.Schema({
+  room: { type: String, default: "chat" },
   user: String,
   text: String,
-  time: Date
+  time: { type: Date, default: Date.now }
 });
 const Message = mongoose.model("Message", messageSchema);
 
 // === GridFS para avatars ===
-const storage = new GridFsStorage({ url: mongoURL, file: (req, file) => ({ filename: `${Date.now()}_${file.originalname}` }) });
+const storage = new GridFsStorage({ 
+  url: mongoURL, 
+  file: (req, file) => ({ filename: `${Date.now()}_${file.originalname}` }) 
+});
 const upload = multer({ storage });
 let bucket;
 conn.once('open', () => {
@@ -50,6 +55,7 @@ app.post('/login', async (req, res) => {
   const { user, pass } = req.body;
   const u = await User.findOne({ username: user });
   if (!u || u.password !== pass) return res.json({ ok: false });
+  if (u.banned) return res.json({ ok: false, banned: true });
   res.json({ ok: true, user: u.username, rol: u.rol, avatarId: u.avatarId });
 });
 
@@ -63,7 +69,7 @@ app.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
 // === Servir avatars ===
 app.get("/avatar/:id", (req, res) => {
   const id = req.params.id;
-  if (id === "default.png") return res.sendFile(path.join(__dirname, "public", "default.png"));
+  if (!id || id === "default.png") return res.sendFile(path.join(__dirname, "public", "default.png"));
   try {
     bucket.openDownloadStream(ObjectId(id)).pipe(res);
   } catch {
@@ -73,27 +79,33 @@ app.get("/avatar/:id", (req, res) => {
 
 // === Socket.IO ===
 const rooms = {};
-const MAX_USERS_PER_ROOM = 50;
 
 io.on('connection', (socket) => {
   socket.lastMessageAt = 0;
 
   socket.on('join-room', async ({ room, username, rol }, ack) => {
     room = room || "chat";
+
     const user = await User.findOne({ username });
     if (!user) return ack && ack({ ok: false });
 
+    if (user.banned) return ack && ack({ ok: false, reason: "banned" });
+
     socket.join(room);
     socket.username = user.username;
-    socket.rol = user.rol; // rol correcto
+    socket.rol = user.rol;
     socket.avatarId = user.avatarId;
+    socket.roomName = room; // 🔑 ahora está definido
 
     if (!rooms[room]) rooms[room] = { users: new Map(), history: [] };
-    rooms[room].users.set(socket.id, socket);
 
-    // Enviar historial de mensajes
-    const messages = await Message.find().sort({ time: 1 }).lean();
-    rooms[room].history = messages;
+    // Enviar historial de mensajes solo si la sala aún no lo tiene
+    if (!rooms[room].history.length) {
+      const messages = await Message.find({ room }).sort({ time: 1 }).lean();
+      rooms[room].history = messages;
+    }
+
+    rooms[room].users.set(socket.id, socket);
 
     // Emitir lista de usuarios
     io.to(room).emit('user-list', Array.from(rooms[room].users.values()).map(u => ({
@@ -102,7 +114,7 @@ io.on('connection', (socket) => {
       avatarId: u.avatarId
     })));
 
-    ack && ack({ ok: true, history: messages });
+    ack && ack({ ok: true, history: rooms[room].history });
   });
 
   socket.on('send-message', async (text, ack) => {
@@ -110,10 +122,12 @@ io.on('connection', (socket) => {
     if (now - (socket.lastMessageAt || 0) < 500) return ack && ack({ ok: false, reason: "rate_limited" });
     socket.lastMessageAt = now;
 
+    const room = socket.roomName;
+    if (!room || !rooms[room]) return;
+
     // === Comandos admin ===
     if (socket.rol === "admin" && text.startsWith("/")) {
       const [cmd, arg] = text.trim().split(" ");
-      const room = socket.roomName;
 
       if (cmd === "/kick") {
         for (const [id, u] of rooms[room].users.entries()) {
@@ -152,16 +166,16 @@ io.on('connection', (socket) => {
       if (cmd === "/announce") {
         const msgText = text.slice(9).trim();
         if (!msgText) return;
-        io.to(socket.roomName).emit("system-message", { text: `[ANUNCIO] ${msgText}`, time: Date.now() });
+        io.to(room).emit("system-message", { text: `[ANUNCIO] ${msgText}`, time: Date.now() });
         return ack && ack({ ok: true });
       }
     }
 
     // Mensaje normal
-    const msg = { user: socket.username, text, time: now };
-    rooms[socket.roomName].history.push(msg);
+    const msg = { room, user: socket.username, text, time: now };
+    rooms[room].history.push(msg);
     await Message.create(msg);
-    io.to(socket.roomName).emit('new-message', msg);
+    io.to(room).emit('new-message', msg);
     ack && ack({ ok: true });
   });
 
