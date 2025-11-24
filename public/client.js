@@ -1,8 +1,10 @@
 const socket = io();
-
 const username = localStorage.getItem("username");
 const rol = localStorage.getItem("rol");
 let avatarId = localStorage.getItem("avatarId") || null;
+
+// Usuarios conectados
+const usuarios = {}; // Guardaremos avatarId de cada usuario
 
 socket.emit("join-room", { room: "chat", username, rol }, (res) => {
   if (!res.ok) {
@@ -10,48 +12,63 @@ socket.emit("join-room", { room: "chat", username, rol }, (res) => {
     location.href = "/login.html";
     return;
   }
+
   avatarId = res.avatarId || null;
   localStorage.setItem("avatarId", avatarId);
+  usuarios[username] = { avatarId, rol };
 
   res.history.forEach(m => addMessage(m));
 });
 
+// ======= SOCKETS =======
 socket.on("new-message", addMessage);
 
 socket.on("system-message", (m) => {
-  addMessage({ user: "SYSTEM", text: m.text, avatarId: null, time: m.time });
+  addMessage({ user: "SYSTEM", text: m.text, avatarId: null, time: m.time, rol: "system" });
 });
 
 socket.on("clear-chat", () => {
   document.getElementById("messages").innerHTML = "";
 });
 
+socket.on("user-list", (users) => {
+  const list = document.getElementById("user-list");
+  list.innerHTML = "";
+  users.forEach(u => {
+    const avatar = usuarios[u]?.avatarId ? `/avatar/${usuarios[u].avatarId}` : '/default-avatar.png';
+    const rol = usuarios[u]?.rol || "user";
+    const div = document.createElement("div");
+    div.innerHTML = `<img src="${avatar}"> ${u}`;
+    div.onclick = () => openProfile(u);
+    list.appendChild(div);
+  });
+});
+
+// ======= FUNCIONES =======
 function addMessage(m) {
   const box = document.getElementById("messages");
-  const avatarUrl = m.avatarId ? `/avatar/${m.avatarId}` : "/default-avatar.png";
+  const avatarUrl = m.avatarId ? `/avatar/${m.avatarId}` : '/default-avatar.png';
+  const div = document.createElement("div");
+  div.classList.add("message");
+  div.classList.add(m.user.includes("(ADMIN)") ? "admin" : "user");
 
-  const line = document.createElement("div");
-  line.style.display = "flex";
-  line.style.alignItems = "center";
-  line.style.marginBottom = "5px";
-
-  line.innerHTML = `
-    <img src="${avatarUrl}" style="width:30px;height:30px;border-radius:50%;margin-right:5px;cursor:pointer;" onclick="openProfile('${m.user}')">
+  div.innerHTML = `
+    <img src="${avatarUrl}" onclick="openProfile('${m.user}')">
     <b>${m.user}:</b> ${m.text}
   `;
-
-  box.appendChild(line);
+  box.appendChild(div);
   box.scrollTop = box.scrollHeight;
+
+  // Guardar avatarId
+  if (!usuarios[m.user] && m.avatarId) usuarios[m.user] = { avatarId: m.avatarId, rol: m.user.includes("(ADMIN)") ? "admin" : "user" };
 }
 
 function sendMsg() {
   const msg = document.getElementById("msgBox").value.trim();
   if (!msg) return;
-
   socket.emit("send-message", msg, (res) => {
     if (!res.ok) alert("Error enviando mensaje");
   });
-
   document.getElementById("msgBox").value = "";
 }
 
@@ -70,8 +87,8 @@ function logout() {
 
 // Abrir perfil
 function openProfile(user) {
-  const userData = usuarios.usuarios[user]; // necesitas pasar usuarios del servidor o fetch
-  if (!userData) return alert("Usuario no encontrado");
-  const avatarUrl = userData.avatarId ? `/avatar/${userData.avatarId}` : "/default-avatar.png";
-  alert(`${user}\nAvatar: ${avatarUrl}`);
+  const data = usuarios[user];
+  if (!data) return alert("Usuario no encontrado");
+  const avatarUrl = data.avatarId ? `/avatar/${data.avatarId}` : "/default-avatar.png";
+  alert(`Perfil de ${user}\nAvatar: ${avatarUrl}`);
 }
