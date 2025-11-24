@@ -1,5 +1,5 @@
 // ===============================
-// server.js FINAL
+// server.js ADMIN + AVATARES
 // ===============================
 const express = require("express");
 const mongoose = require("mongoose");
@@ -98,17 +98,19 @@ app.get("/avatar/:filename", async (req, res) => {
 let online = {}; // username → user info
 
 io.on("connection", (socket) => {
-    console.log("Nuevo cliente conectado");
 
     // JOIN ROOM
-    socket.on("join-room", async ({ room, username, rol }, cb) => {
+    socket.on("join-room", async ({ room, username }, cb) => {
         try {
             const user = await User.findOne({ username });
             if (!user) return cb({ ok: false });
 
+            if (user.banned)
+                return cb({ ok: false, reason: "banned" });
+
             socket.join(room);
             socket.username = username;
-            socket.rol = user.rol || rol;
+            socket.rol = user.rol;
             socket.avatarId = user.avatarId;
 
             online[username] = {
@@ -117,9 +119,7 @@ io.on("connection", (socket) => {
                 avatarId: user.avatarId
             };
 
-            // historial
-            const history = await Message.find().limit(50).lean();
-
+            const history = await Message.find().sort({ time: -1 }).limit(50).lean();
             cb({ ok: true, history });
 
             io.emit("user-list", Object.values(online));
@@ -129,10 +129,50 @@ io.on("connection", (socket) => {
         }
     });
 
-    // ENVIAR MENSAJE
+
+    // ==================================================
+    // ENVIAR MENSAJE + COMANDOS ADMIN
+    // ==================================================
     socket.on("send-message", async (msg, cb) => {
         if (!socket.username) return cb({ ok: false });
 
+        // ---------- DETECTAR COMANDOS ----------
+        if (msg.startsWith("/")) {
+
+            if (socket.rol !== "admin") {
+                socket.emit("system-message", { text: "No tienes permisos." });
+                return cb({ ok: true });
+            }
+
+            const [cmd, target] = msg.split(" ");
+
+            switch (cmd) {
+
+                case "/clear":
+                    await Message.deleteMany({});
+                    io.emit("clear-chat");
+                    break;
+
+                case "/ban":
+                    if (!target) break;
+                    await User.updateOne({ username: target }, { banned: true });
+                    io.emit("system-message", { text: `${target} fue baneado` });
+                    break;
+
+                case "/unban":
+                    if (!target) break;
+                    await User.updateOne({ username: target }, { banned: false });
+                    io.emit("system-message", { text: `${target} fue desbaneado` });
+                    break;
+
+                default:
+                    socket.emit("system-message", { text: "Comando desconocido" });
+            }
+
+            return cb({ ok: true });
+        }
+
+        // ---------- MENSAJE NORMAL ----------
         const m = new Message({
             user: socket.username,
             text: msg,
@@ -150,6 +190,7 @@ io.on("connection", (socket) => {
 
         cb({ ok: true });
     });
+
 
     // DESCONECTAR
     socket.on("disconnect", () => {
