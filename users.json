@@ -7,8 +7,7 @@
     "Jahdiel": {
       "password": "Test",
       "rol": "user"
-    }
-   },
+    },
     "Esteyci": {
       "password": "contraseña",
       "rol": "admin"
