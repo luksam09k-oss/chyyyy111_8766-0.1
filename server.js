@@ -48,7 +48,7 @@ const storage = new GridFsStorage({
 const upload = multer({ storage });
 
 // ==================================================
-// LOGIN (texto plano, sin bcrypt)
+// LOGIN
 // ==================================================
 app.post("/login", async (req, res) => {
     try {
@@ -117,7 +117,7 @@ app.get("/avatar/:filename", async (req, res) => {
 // ==================================================
 // SOCKET.IO CHAT
 // ==================================================
-let online = {}; // username → user info
+let online = {}; // username → info
 
 io.on("connection", (socket) => {
     console.log("Nuevo cliente conectado");
@@ -142,7 +142,11 @@ io.on("connection", (socket) => {
                 avatarId: user.avatarId
             };
 
-            const history = await Message.find().sort({ time: 1 }).limit(50).lean();
+            // 🔥 HISTORIAL SOLO DE ESA ROOM
+            const history = await Message.find({ room })
+                .sort({ time: 1 })
+                .limit(50)
+                .lean();
 
             cb({ ok: true, history });
 
@@ -174,8 +178,8 @@ io.on("connection", (socket) => {
             switch (cmd) {
 
                 case "/clear":
-                    await Message.deleteMany({});
-                    io.emit("clear-chat");
+                    await Message.deleteMany({ room: "chat" });
+                    io.to("chat").emit("clear-chat");
                     break;
 
                 case "/ban":
@@ -198,8 +202,11 @@ io.on("connection", (socket) => {
             return;
         }
 
-        // MENSAJE NORMAL
+        // ==================================================
+        // MENSAJE NORMAL (CORREGIDO)
+        // ==================================================
         const m = new Message({
+            room: "chat",
             user: socket.username,
             text: msg,
             rol: socket.rol,
@@ -208,7 +215,8 @@ io.on("connection", (socket) => {
 
         await m.save();
 
-        io.emit("new-message", {
+        io.to("chat").emit("new-message", {
+            room: "chat",
             user: socket.username,
             text: msg,
             rol: socket.rol,
