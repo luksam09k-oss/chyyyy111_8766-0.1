@@ -123,7 +123,7 @@ io.on("connection", (socket) => {
     console.log("Nuevo cliente conectado");
 
     // JOIN ROOM
-    socket.on("join-room", async ({ room, username }, cb) => {
+    socket.on("join-room", async ({ room, username, rol }, cb = () => {}) => {
         try {
             const user = await User.findOne({ username });
             if (!user) return cb({ ok: false });
