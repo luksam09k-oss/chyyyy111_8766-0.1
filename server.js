@@ -6,7 +6,6 @@ const multer = require("multer");
 const { GridFsStorage } = require("multer-gridfs-storage");
 const crypto = require("crypto");
 const path = require("path");
-const cors = require("cors");
 
 const app = express();
 const server = http.createServer(app);
@@ -15,22 +14,18 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static("public"));
-app.use(cors());
 
 // ===== MongoDB =====
 mongoose.connect("mongodb+srv://luksam09k_db_user:D7mcreChPJu9HFBt@cluster0.3bnnbke.mongodb.net/ChatDB?retryWrites=true&w=majority");
-
 const conn = mongoose.connection;
 let gfs;
 
 conn.once("open", () => {
   console.log("MongoDB conectado");
-  gfs = new mongoose.mongo.GridFSBucket(conn.db, {
-    bucketName: "avatars"
-  });
+  gfs = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: "avatars" });
 });
 
-// ===== Multer GridFS Storage =====
+// ===== Multer GridFS =====
 const storage = new GridFsStorage({
   url: "mongodb+srv://luksam09k_db_user:D7mcreChPJu9HFBt@cluster0.3bnnbke.mongodb.net/ChatDB",
   file: (req, file) => {
@@ -84,12 +79,12 @@ app.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
   user.avatarId = file.id.toString();
   await user.save();
 
-  io.emit("update-user", { username, avatarId: user.avatarId }); // actualizar lateral
+  io.emit("update-user", { username, avatarId: user.avatarId });
   res.json({ ok: true, avatarId: user.avatarId });
 });
 
 // Obtener avatar
-app.get("/avatar/:id", async (req, res) => {
+app.get("/avatar/:id", (req, res) => {
   try {
     const fileId = new mongoose.Types.ObjectId(req.params.id);
     gfs.find({ _id: fileId }).toArray((err, files) => {
@@ -102,22 +97,34 @@ app.get("/avatar/:id", async (req, res) => {
 });
 
 // ===== Socket.io =====
-io.on("connection", async (socket) => {
+const rooms = {};
+
+io.on("connection", (socket) => {
+
   socket.on("join-room", async ({ room, username, rol }, ack) => {
     room = room || "chat";
     socket.join(room);
+    socket.username = username;
+    socket.rol = rol;
 
-    // cargar historial
+    if (!rooms[room]) rooms[room] = new Set();
+    rooms[room].add(username);
+
+    // historial de mensajes
     const history = await Message.find().sort({ time: 1 }).limit(50).lean();
     ack && ack({ ok: true, history });
 
-    // enviar lista de usuarios conectados
+    // lista de usuarios
     const users = await User.find().lean();
-    io.to(room).emit("user-list", users);
+    io.to(room).emit("user-list", users.map(u => ({
+      username: u.username,
+      rol: u.rol,
+      avatarId: u.avatarId || null
+    })));
   });
 
   socket.on("send-message", async (text, ack) => {
-    const username = socket.handshake.query.username;
+    const username = socket.username;
     const user = await User.findOne({ username });
     if (!user) return ack && ack({ ok: false });
 
@@ -131,6 +138,13 @@ io.on("connection", async (socket) => {
 
     io.emit("new-message", msg);
     ack && ack({ ok: true });
+  });
+
+  socket.on("disconnect", () => {
+    for (let room in rooms) {
+      rooms[room].delete(socket.username);
+      io.to(room).emit("user-list", Array.from(rooms[room]));
+    }
   });
 });
 
