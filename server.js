@@ -1,5 +1,5 @@
 // ===============================
-// server.js FINAL (LOGIN + AVATARES + ADMIN + CHAT)
+// server.js ADMIN + AVATARES
 // ===============================
 const express = require("express");
 const mongoose = require("mongoose");
@@ -9,7 +9,6 @@ const path = require("path");
 const multer = require("multer");
 const { GridFsStorage } = require("multer-gridfs-storage");
 const cors = require("cors");
-const bcrypt = require("bcrypt");
 
 const User = require("./User");
 const Message = require("./Message");
@@ -38,6 +37,7 @@ conn.once("open", () => {
     console.log("MongoDB + GridFS listo");
 });
 
+// GridFS Storage
 const storage = new GridFsStorage({
     url: mongoURI,
     file: (req, file) => ({
@@ -45,34 +45,32 @@ const storage = new GridFsStorage({
         bucketName: "uploads"
     })
 });
-
 const upload = multer({ storage });
 
 // ==================================================
-// LOGIN API (Faltaba esto!)
+// LOGIN (texto plano, sin bcrypt)
 // ==================================================
 app.post("/login", async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { user, pass } = req.body;
 
-        const user = await User.findOne({ username });
-        if (!user) return res.json({ ok: false, msg: "Usuario no existe" });
+        const found = await User.findOne({ username: user });
+        if (!found) return res.json({ ok: false });
 
-        const match = await bcrypt.compare(password, user.password);
-        if (!match) return res.json({ ok: false, msg: "Contraseña incorrecta" });
+        if (found.password !== pass) return res.json({ ok: false });
 
-        if (user.banned) return res.json({ ok: false, msg: "BANEADO" });
+        if (found.banned) return res.json({ ok: false, reason: "banned" });
 
         res.json({
             ok: true,
-            username: user.username,
-            rol: user.rol,
-            avatarId: user.avatarId
+            user: found.username,
+            rol: found.rol,
+            avatarId: found.avatarId
         });
 
     } catch (e) {
-        console.log(e);
-        res.json({ ok: false, msg: "Error interno" });
+        console.error(e);
+        res.json({ ok: false });
     }
 });
 
@@ -117,11 +115,12 @@ app.get("/avatar/:filename", async (req, res) => {
 });
 
 // ==================================================
-// SOCKET.IO — CHAT REAL
+// SOCKET.IO CHAT REAL
 // ==================================================
-let online = {}; // Lista de usuarios conectados
+let online = {}; // username → user info
 
 io.on("connection", (socket) => {
+    console.log("Nuevo cliente conectado");
 
     // JOIN ROOM
     socket.on("join-room", async ({ room, username }, cb) => {
@@ -146,6 +145,7 @@ io.on("connection", (socket) => {
             const history = await Message.find().sort({ time: 1 }).limit(50).lean();
 
             cb({ ok: true, history });
+
             io.emit("user-list", Object.values(online));
 
         } catch {
@@ -153,11 +153,11 @@ io.on("connection", (socket) => {
         }
     });
 
-    // ENVIAR MENSAJE + ADMIN COMMANDS
+    // ENVIAR MENSAJE + COMANDOS
     socket.on("send-message", async (msg, cb) => {
         if (!socket.username) return cb({ ok: false });
 
-        // ---------- COMANDOS ADMIN ----------
+        // comandos
         if (msg.startsWith("/")) {
 
             if (socket.rol !== "admin") {
@@ -192,14 +192,13 @@ io.on("connection", (socket) => {
             return cb({ ok: true });
         }
 
-        // ---------- MENSAJE NORMAL ----------
+        // mensaje normal
         const m = new Message({
             user: socket.username,
             text: msg,
             rol: socket.rol,
             avatarId: socket.avatarId
         });
-
         await m.save();
 
         io.emit("new-message", {
