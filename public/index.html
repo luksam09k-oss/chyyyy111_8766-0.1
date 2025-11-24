@@ -3,59 +3,140 @@
 <head>
   <meta charset="UTF-8">
   <title>Chatroom</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing:border-box;margin:0;padding:0; }
-    body { font-family:'Roboto',sans-serif; background:#18191c;color:#ddd;height:100vh;display:flex; }
-    .sidebar { width:250px;background:#242629;display:flex;flex-direction:column;padding:15px; }
-    .room-name { font-size:1.2em;font-weight:500;margin-bottom:10px; }
-    .users { flex:1;overflow-y:auto;margin-top:10px; }
-    .user { display:flex; align-items:center; padding:8px 10px;border-radius:5px;margin-bottom:5px;background:#2f3136; cursor:pointer; }
-    .user img { width:30px;height:30px;border-radius:50%;margin-right:8px; }
-    .chat-container { flex:1; display:flex; flex-direction:column; background:#1f1f23; }
-    .messages { flex:1; padding:15px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; }
-    .message { padding:8px 12px; border-radius:8px; max-width:80%; word-wrap:break-word; display:flex; align-items:center; }
-    .message.user { background:#4caf50; align-self:flex-end; color:#fff; }
-    .message.admin { background:#e67e22; align-self:flex-end; color:#fff; }
-    .message.system { background:#555; align-self:center; font-style:italic; }
-    .message img { width:24px; height:24px; border-radius:50%; margin-right:8px; }
-    .chat-input { display:flex; padding:10px; background:#272729; }
-    .chat-input input { flex:1; padding:10px; border-radius:8px; border:none; outline:none; background:#1f1f23;color:#eee; }
-    .chat-input button { margin-left:10px;padding:10px 15px;border-radius:8px;border:none;background:#4caf50;color:white; cursor:pointer; }
-    #profileModal { display:none; position:fixed; top:0; left:0;width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; }
-    #profileModal .modalContent { background:#242629; padding:20px; border-radius:10px; width:300px; text-align:center; }
-    #profileModal img { width:100px;height:100px;border-radius:50%; margin-bottom:15px; }
-    #profileModal input { margin-bottom:10px; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      background: #2f3136;
+      color: white;
+    }
+
+    /* Lateral usuarios */
+    #sidebar {
+      width: 200px;
+      background: #202225;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #sidebar h3 {
+      margin-top: 0;
+      font-size: 16px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 5px;
+    }
+
+    #user-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    #user-list div {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+      cursor: pointer;
+    }
+
+    #user-list div img {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+
+    /* Chat principal */
+    #chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      background: #36393f;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .message {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    .message img {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      margin-right: 5px;
+      cursor: pointer;
+    }
+
+    .message.admin b {
+      color: red;
+    }
+
+    .message.user b {
+      color: #00b0f4;
+    }
+
+    #input-container {
+      margin-top: 10px;
+      display: flex;
+    }
+
+    #msgBox {
+      flex: 1;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 14px;
+    }
+
+    #sendBtn {
+      padding: 10px 15px;
+      margin-left: 5px;
+      border-radius: 5px;
+      border: none;
+      background: #7289da;
+      color: white;
+      cursor: pointer;
+    }
+
+    button#logoutBtn {
+      margin-top: 10px;
+      padding: 8px;
+      border: none;
+      border-radius: 5px;
+      background: #f04747;
+      color: white;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
-<div class="sidebar">
-  <div class="room-name" id="roomName">Sala: chat</div>
-  <div class="users" id="userList"></div>
-  <button onclick="logout()" style="margin-top:10px; background:#e74c3c; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">Logout</button>
-</div>
-
-<div class="chat-container">
-  <div id="messages" class="messages"></div>
-  <div class="chat-input">
-    <input id="msgBox" placeholder="Escribe un mensaje..." autocomplete="off">
-    <button onclick="sendMsg()">Enviar</button>
+  <div id="sidebar">
+    <h3>Usuarios conectados</h3>
+    <div id="user-list"></div>
+    <button id="logoutBtn" onclick="logout()">Logout</button>
   </div>
-</div>
 
-<!-- Modal perfil -->
-<div id="profileModal">
-  <div class="modalContent">
-    <h3 id="profileName"></h3>
-    <img id="profileAvatar" src="/avatars/default.png">
-    <input type="file" id="avatarInput">
-    <button onclick="saveAvatar()">Guardar</button>
-    <button onclick="closeProfile()">Cerrar</button>
+  <div id="chat-container">
+    <div id="messages"></div>
+    <div id="input-container">
+      <input id="msgBox" placeholder="Escribe tu mensaje...">
+      <button id="sendBtn" onclick="sendMsg()">Enviar</button>
+    </div>
   </div>
-</div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="client.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
 </body>
 </html>
