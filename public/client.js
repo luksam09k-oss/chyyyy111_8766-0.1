@@ -84,6 +84,9 @@ function addMessage(m) {
 
   if (!m.user) {
     line.innerHTML = `<div class="systemMsg" style="white-space: pre-wrap;">${m.text}</div>`;
+    if (m.imageUrl) {
+      line.innerHTML += `<br><img src="${m.imageUrl}" style="max-width:200px; max-height:200px; border-radius:6px;">`;
+    }
   } else {
     const nameColor = m.rol==="admin"?"nameAdmin":"nameNormal";
     if (m.deleted) {
