@@ -2,6 +2,8 @@ const socket = io();
 const username = localStorage.getItem("username");
 const rol = localStorage.getItem("rol");
 
+let replyingTo = null;
+
 // Unirse al chat
 socket.emit("join-room", { room: "chat", username, rol }, (res) => {
   if (!res.ok) { alert("No puedes entrar"); return; }
@@ -18,6 +20,22 @@ socket.on("message-deleted", ({ _id }) => {
   if (!msg) return;
   msg.querySelector(".msgBubble").innerHTML = `<i style="opacity:0.6">mensaje eliminado</i>`;
 });
+socket.on("user-typing", ({ user, typing }) => {
+  const box = document.getElementById("messages");
+  let typingEl = document.getElementById(`typing-${user}`);
+  if (typing) {
+    if (!typingEl) {
+      typingEl = document.createElement("div");
+      typingEl.id = `typing-${user}`;
+      typingEl.className = "systemMsg";
+      typingEl.textContent = `${user} está escribiendo...`;
+      box.appendChild(typingEl);
+      box.scrollTop = box.scrollHeight;
+    }
+  } else {
+    typingEl?.remove();
+  }
+});
 
 // Render usuarios conectados
 function renderUserList(users) {
@@ -27,26 +45,32 @@ function renderUserList(users) {
     const div = document.createElement("div");
     div.classList.add("user-entry");
     if (u.username === username) div.classList.add("meUser");
-    div.innerHTML = `
-      <img src="/avatar/${u.avatarId || "default.png"}">
-      <span style="color:${u.rol==="admin"?"#ff4444":"#c084ff"}">${u.username}</span>
-    `;
+    div.innerHTML = `<img src="/avatar/${u.avatarId || "default.png"}">
+                     <span style="color:${u.rol==="admin"?"#ff4444":"#c084ff"}">${u.username}</span>`;
     side.appendChild(div);
   });
 }
 
 // Enviar con Enter
 document.getElementById("msgBox").addEventListener("keypress", e => {
+  socket.emit("typing", e.key !== "Enter" && e.target.value.trim() !== "");
   if (e.key === "Enter") sendMsg();
 });
 document.getElementById("sendBtn").addEventListener("click", sendMsg);
 
 function sendMsg() {
   const box = document.getElementById("msgBox");
-  const msg = box.value.trim();
+  let msg = box.value.trim();
   if (!msg) return;
+
+  if (replyingTo) {
+    msg = `[responde a ${replyingTo}]: ${msg}`;
+    replyingTo = null;
+  }
+
   socket.emit("send-message", msg);
   box.value = "";
+  socket.emit("typing", false);
 }
 
 // Render mensajes
@@ -85,6 +109,16 @@ function addMessage(m) {
           </div>
         </div>
       `;
+      // Activar responder
+      const replyBtn = line.querySelector(".replyBtn");
+      if (replyBtn) {
+        replyBtn.addEventListener("click", () => {
+          replyingTo = m.user;
+          const input = document.getElementById("msgBox");
+          input.value = `@${m.user} `;
+          input.focus();
+        });
+      }
     }
   }
 
