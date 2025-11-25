@@ -162,7 +162,7 @@ io.on("connection", (socket) => {
 
         case "/admin":
           const subcmd = target;
-          const arg = rest[0];
+          const arg = rest.join(" "); // reconstruye todo como filename si hace falta
 
           switch(subcmd) {
             case "list-images":
@@ -172,7 +172,7 @@ io.on("connection", (socket) => {
               } else {
                 files.forEach(f => {
                   socket.emit("system-message", {
-                    text: `${f.filename} (${f.length} bytes, ${f.contentType})`,
+                    text: f.filename,
                     imageUrl: `/avatar/${f.filename}`
                   });
                 });
