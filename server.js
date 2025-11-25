@@ -1,5 +1,5 @@
 // ===============================
-// server.js ADMIN + AVATARES
+// server.js ADMIN + AVATARES + ELIMINAR MENSAJES
 // ===============================
 const express = require("express");
 const mongoose = require("mongoose");
@@ -31,9 +31,7 @@ mongoose.connect(mongoURI);
 
 let gfs;
 conn.once("open", () => {
-    gfs = new mongoose.mongo.GridFSBucket(conn.db, {
-        bucketName: "uploads"
-    });
+    gfs = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: "uploads" });
     console.log("MongoDB + GridFS listo");
 });
 
@@ -53,12 +51,9 @@ const upload = multer({ storage });
 app.post("/login", async (req, res) => {
     try {
         const { user, pass } = req.body;
-
         const found = await User.findOne({ username: user });
         if (!found) return res.json({ ok: false });
-
         if (found.password !== pass) return res.json({ ok: false });
-
         if (found.banned) return res.json({ ok: false, reason: "banned" });
 
         res.json({
@@ -67,7 +62,6 @@ app.post("/login", async (req, res) => {
             rol: found.rol,
             avatarId: found.avatarId
         });
-
     } catch (e) {
         console.error(e);
         res.json({ ok: false });
@@ -80,14 +74,8 @@ app.post("/login", async (req, res) => {
 app.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
     try {
         const username = req.body.username;
-
-        await User.findOneAndUpdate(
-            { username },
-            { avatarId: req.file.filename }
-        );
-
+        await User.findOneAndUpdate({ username }, { avatarId: req.file.filename });
         res.json({ ok: true, avatarId: req.file.filename });
-
     } catch (e) {
         console.log(e);
         res.json({ ok: false });
@@ -99,16 +87,10 @@ app.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
 // ==================================================
 app.get("/avatar/:filename", async (req, res) => {
     try {
-        const file = await conn.db
-            .collection("uploads.files")
-            .findOne({ filename: req.params.filename });
-
-        if (!file) {
-            return res.sendFile(path.join(__dirname, "public", "default.png"));
-        }
+        const file = await conn.db.collection("uploads.files").findOne({ filename: req.params.filename });
+        if (!file) return res.sendFile(path.join(__dirname, "public", "default.png"));
 
         gfs.openDownloadStreamByName(req.params.filename).pipe(res);
-
     } catch (e) {
         return res.sendFile(path.join(__dirname, "public", "default.png"));
     }
@@ -127,29 +109,21 @@ io.on("connection", (socket) => {
         try {
             const user = await User.findOne({ username });
             if (!user) return cb({ ok: false });
-
-            if (user.banned)
-                return cb({ ok: false, reason: "banned" });
+            if (user.banned) return cb({ ok: false, reason: "banned" });
 
             socket.join(room);
             socket.username = username;
             socket.rol = user.rol;
             socket.avatarId = user.avatarId;
 
-            online[username] = {
-                username,
-                rol: user.rol,
-                avatarId: user.avatarId
-            };
+            online[username] = { username, rol: user.rol, avatarId: user.avatarId };
 
-            // 🔥 HISTORIAL SOLO DE ESA ROOM
             const history = await Message.find({ room })
                 .sort({ time: 1 })
-                .limit(50)
+                .limit(100)
                 .lean();
 
             cb({ ok: true, history });
-
             io.emit("user-list", Object.values(online));
 
         } catch {
@@ -159,52 +133,38 @@ io.on("connection", (socket) => {
 
     // ENVIAR MENSAJE + COMANDOS
     socket.on("send-message", async (msg, cb) => {
-        if (!socket.username) {
-            if (cb) cb({ ok: false });
-            return;
-        }
+        if (!socket.username) return cb?.({ ok: false });
 
         // COMANDOS
         if (msg.startsWith("/")) {
-
             if (socket.rol !== "admin") {
                 socket.emit("system-message", { text: "No tienes permisos." });
-                if (cb) cb({ ok: true });
-                return;
+                return cb?.({ ok: true });
             }
 
             const [cmd, target] = msg.split(" ");
-
             switch (cmd) {
-
                 case "/clear":
                     await Message.deleteMany({ room: "chat" });
                     io.to("chat").emit("clear-chat");
                     break;
-
                 case "/ban":
                     if (!target) break;
                     await User.updateOne({ username: target }, { banned: true });
                     io.emit("system-message", { text: `${target} fue baneado` });
                     break;
-
                 case "/unban":
                     if (!target) break;
                     await User.updateOne({ username: target }, { banned: false });
                     io.emit("system-message", { text: `${target} fue desbaneado` });
                     break;
-
                 default:
                     socket.emit("system-message", { text: "Comando desconocido" });
             }
-
-            if (cb) cb({ ok: true });
-            return;
+            return cb?.({ ok: true });
         }
 
-        // ==================================================
-        // MENSAJE NORMAL (CORREGIDO)
-        // ==================================================
+        // MENSAJE NORMAL
         const m = new Message({
             room: "chat",
             user: socket.username,
@@ -216,14 +176,28 @@ io.on("connection", (socket) => {
         await m.save();
 
         io.to("chat").emit("new-message", {
+            _id: m._id,
             room: "chat",
             user: socket.username,
             text: msg,
             rol: socket.rol,
-            avatarId: socket.avatarId
+            avatarId: socket.avatarId,
+            time: m.time,
+            deleted: false
         });
 
-        if (cb) cb({ ok: true });
+        cb?.({ ok: true });
+    });
+
+    // ELIMINAR MENSAJE
+    socket.on("delete-message", async (msgId) => {
+        const msg = await Message.findById(msgId);
+        if (!msg || msg.user !== socket.username) return;
+
+        msg.deleted = true;
+        await msg.save();
+
+        io.to("chat").emit("message-deleted", { _id: msgId });
     });
 
     // DESCONECTAR
@@ -239,6 +213,4 @@ io.on("connection", (socket) => {
 // SERVIDOR
 // ==================================================
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () =>
-    console.log("Servidor corriendo en http://localhost:" + PORT)
-);
+server.listen(PORT, () => console.log("Servidor corriendo en http://localhost:" + PORT));
