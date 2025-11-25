@@ -78,17 +78,14 @@ function addMessage(m) {
   const box = document.getElementById("messages");
   const line = document.createElement("div");
   line.classList.add("message");
-  line.dataset.id = m._id;
-  if (m.user === username) line.classList.add("me");
-  else line.classList.add("other");
+  line.dataset.id = m._id || "";
 
   const time = m.time ? new Date(m.time).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "";
 
   if (!m.user) {
-    line.innerHTML = `<div class="systemMsg">${m.text}</div>`;
+    line.innerHTML = `<div class="systemMsg" style="white-space: pre-wrap;">${m.text}</div>`;
   } else {
     const nameColor = m.rol==="admin"?"nameAdmin":"nameNormal";
-
     if (m.deleted) {
       line.innerHTML = `<div class="msgBubble"><i style="opacity:0.6">mensaje eliminado</i><span class="timeStamp">${time}</span></div>`;
     } else {
@@ -109,16 +106,13 @@ function addMessage(m) {
           </div>
         </div>
       `;
-      // Activar responder
       const replyBtn = line.querySelector(".replyBtn");
-      if (replyBtn) {
-        replyBtn.addEventListener("click", () => {
-          replyingTo = m.user;
-          const input = document.getElementById("msgBox");
-          input.value = `@${m.user} `;
-          input.focus();
-        });
-      }
+      if (replyBtn) replyBtn.addEventListener("click", () => {
+        replyingTo = m.user;
+        const input = document.getElementById("msgBox");
+        input.value = `@${m.user} `;
+        input.focus();
+      });
     }
   }
 
