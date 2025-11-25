@@ -123,11 +123,7 @@ io.on("connection", (socket) => {
 
       online[username] = { username, rol: user.rol, avatarId: user.avatarId };
 
-      const history = await Message.find({ room })
-        .sort({ time: 1 })
-        .limit(100)
-        .lean();
-
+      const history = await Message.find({ room }).sort({ time: 1 }).limit(100).lean();
       cb({ ok: true, history });
       io.emit("user-list", Object.values(online));
     } catch {
@@ -164,7 +160,6 @@ io.on("connection", (socket) => {
           io.emit("system-message", { text: `${target} fue desbaneado` });
           break;
 
-        // NUEVOS COMANDOS ADMIN
         case "/admin":
           const subcmd = target;
           const arg = rest[0];
@@ -172,8 +167,16 @@ io.on("connection", (socket) => {
           switch(subcmd) {
             case "list-images":
               const files = await conn.db.collection("uploads.files").find({}).toArray();
-              const fileList = files.map(f => `${f.filename} (${f.length} bytes, ${f.contentType})`).join("\n");
-              socket.emit("system-message", { text: fileList || "No hay imágenes" });
+              if (!files.length) {
+                socket.emit("system-message", { text: "No hay imágenes" });
+              } else {
+                files.forEach(f => {
+                  socket.emit("system-message", {
+                    text: `${f.filename} (${f.length} bytes, ${f.contentType})`,
+                    imageUrl: `/avatar/${f.filename}`
+                  });
+                });
+              }
               break;
 
             case "show-image":
@@ -185,22 +188,37 @@ io.on("connection", (socket) => {
               if (!file) {
                 socket.emit("system-message", { text: "Archivo no encontrado" });
               } else {
-                socket.emit("system-message", { text: JSON.stringify({
-                  filename: file.filename,
-                  size: file.length,
-                  type: file.contentType,
-                  uploadDate: file.uploadDate
-                }, null, 2) });
+                socket.emit("system-message", {
+                  text: `Archivo: ${file.filename}\nTamaño: ${file.length} bytes\nTipo: ${file.contentType}\nSubida: ${file.uploadDate}`,
+                  imageUrl: `/avatar/${file.filename}`
+                });
               }
               break;
 
             case "list-messages":
-              const messages = await Message.find({})
-                                            .sort({ time: -1 })
-                                            .limit(50)
-                                            .lean();
-              const msgText = messages.map(m => `[${m.time.toISOString()}] ${m.user}: ${m.text} (deleted: ${m.deleted})`).join("\n");
-              socket.emit("system-message", { text: msgText || "No hay mensajes" });
+              const messages = await Message.find({}).sort({ time: -1 }).limit(50).lean();
+              if (!messages.length) {
+                socket.emit("system-message", { text: "No hay mensajes" });
+              } else {
+                messages.forEach(m => {
+                  socket.emit("system-message", {
+                    text: `[${m.time.toISOString()}] ${m.user}: ${m.text} (deleted: ${m.deleted})`
+                  });
+                });
+              }
+              break;
+
+            case "help":
+              const cmds = `
+/clear - Limpiar chat
+/ban <user> - Banear usuario
+/unban <user> - Desbanear usuario
+/admin list-images - Listar imágenes
+/admin show-image <filename> - Ver info de imagen
+/admin list-messages - Listar últimos mensajes
+/help - Mostrar comandos
+              `;
+              socket.emit("system-message", { text: cmds.trim() });
               break;
 
             default:
