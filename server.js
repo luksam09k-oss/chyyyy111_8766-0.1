@@ -1,5 +1,5 @@
 // ===============================
-// server.js ADMIN + AVATARES + ELIMINAR MENSAJES + RESPONDER
+// server.js ADMIN + AVATARES + ELIMINAR MENSAJES + RESPONDER + PANEL ADMIN
 // ===============================
 const express = require("express");
 const mongoose = require("mongoose");
@@ -145,7 +145,9 @@ io.on("connection", (socket) => {
         socket.emit("system-message", { text: "No tienes permisos." });
         return cb?.({ ok: true });
       }
-      const [cmd, target] = msg.split(" ");
+
+      const [cmd, target, ...rest] = msg.split(" ");
+
       switch (cmd) {
         case "/clear":
           await Message.deleteMany({ room: "chat" });
@@ -161,9 +163,55 @@ io.on("connection", (socket) => {
           await User.updateOne({ username: target }, { banned: false });
           io.emit("system-message", { text: `${target} fue desbaneado` });
           break;
+
+        // NUEVOS COMANDOS ADMIN
+        case "/admin":
+          const subcmd = target;
+          const arg = rest[0];
+
+          switch(subcmd) {
+            case "list-images":
+              const files = await conn.db.collection("uploads.files").find({}).toArray();
+              const fileList = files.map(f => `${f.filename} (${f.length} bytes, ${f.contentType})`).join("\n");
+              socket.emit("system-message", { text: fileList || "No hay imágenes" });
+              break;
+
+            case "show-image":
+              if (!arg) {
+                socket.emit("system-message", { text: "Especifica un filename" });
+                break;
+              }
+              const file = await conn.db.collection("uploads.files").findOne({ filename: arg });
+              if (!file) {
+                socket.emit("system-message", { text: "Archivo no encontrado" });
+              } else {
+                socket.emit("system-message", { text: JSON.stringify({
+                  filename: file.filename,
+                  size: file.length,
+                  type: file.contentType,
+                  uploadDate: file.uploadDate
+                }, null, 2) });
+              }
+              break;
+
+            case "list-messages":
+              const messages = await Message.find({})
+                                            .sort({ time: -1 })
+                                            .limit(50)
+                                            .lean();
+              const msgText = messages.map(m => `[${m.time.toISOString()}] ${m.user}: ${m.text} (deleted: ${m.deleted})`).join("\n");
+              socket.emit("system-message", { text: msgText || "No hay mensajes" });
+              break;
+
+            default:
+              socket.emit("system-message", { text: "Subcomando desconocido" });
+          }
+          break;
+
         default:
           socket.emit("system-message", { text: "Comando desconocido" });
       }
+
       return cb?.({ ok: true });
     }
 
