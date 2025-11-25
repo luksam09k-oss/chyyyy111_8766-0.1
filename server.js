@@ -162,7 +162,7 @@ io.on("connection", (socket) => {
 
         case "/admin":
           const subcmd = target;
-          const arg = rest.join(" "); // reconstruye todo como filename si hace falta
+          const arg = rest.join(" "); // reconstruye todo como filename o parámetros
 
           switch(subcmd) {
             case "list-images":
@@ -171,10 +171,7 @@ io.on("connection", (socket) => {
                 socket.emit("system-message", { text: "No hay imágenes" });
               } else {
                 files.forEach(f => {
-                  socket.emit("system-message", {
-                    text: f.filename,
-                    imageUrl: `/avatar/${f.filename}`
-                  });
+                  socket.emit("system-message", { text: f.filename, imageUrl: `/avatar/${f.filename}` });
                 });
               }
               break;
@@ -216,9 +213,37 @@ io.on("connection", (socket) => {
 /admin list-images - Listar imágenes
 /admin show-image <filename> - Ver info de imagen
 /admin list-messages - Listar últimos mensajes
+/admin new-user <username> <password> <rol> - Crear nuevo usuario
 /help - Mostrar comandos
               `;
               socket.emit("system-message", { text: cmds.trim() });
+              break;
+
+            case "new-user":
+              const newUser = rest[0];       // username
+              const newPass = rest[1];       // password
+              const newRol  = rest[2] || "user"; // rol por defecto
+
+              if (!newUser || !newPass) {
+                socket.emit("system-message", { text: "Faltan parámetros. Uso: /admin new-user <username> <password> <rol>" });
+                break;
+              }
+
+              const exists = await User.findOne({ username: newUser });
+              if (exists) {
+                socket.emit("system-message", { text: "Usuario ya existe" });
+                break;
+              }
+
+              const user = new User({
+                username: newUser,
+                password: newPass,
+                rol: newRol,
+                banned: false,
+                avatarId: "default.png"
+              });
+              await user.save();
+              socket.emit("system-message", { text: `Usuario ${newUser} creado con rol ${newRol}` });
               break;
 
             default:
