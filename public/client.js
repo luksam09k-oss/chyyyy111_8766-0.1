@@ -16,19 +16,19 @@ socket.on("system-message", addMessage);
 socket.on("clear-chat", () => document.getElementById("messages").innerHTML = "");
 socket.on("user-list", renderUserList);
 socket.on("message-deleted", ({ _id }) => {
-  const msg = document.querySelector(.message[data-id="${_id}"]);
+  const msg = document.querySelector(`.message[data-id="${_id}"]`);
   if (!msg) return;
-  msg.querySelector(".msgBubble").innerHTML = <i style="opacity:0.6">mensaje eliminado</i>;
+  msg.querySelector(".msgBubble").innerHTML = `<i style="opacity:0.6">mensaje eliminado</i>`;
 });
 socket.on("user-typing", ({ user, typing }) => {
   const box = document.getElementById("messages");
-  let typingEl = document.getElementById(typing-${user});
+  let typingEl = document.getElementById(`typing-${user}`);
   if (typing) {
     if (!typingEl) {
       typingEl = document.createElement("div");
-      typingEl.id = typing-${user};
+      typingEl.id = `typing-${user}`;
       typingEl.className = "systemMsg";
-      typingEl.textContent = ${user} está escribiendo...;
+      typingEl.textContent = `${user} está escribiendo...`;
       box.appendChild(typingEl);
       box.scrollTop = box.scrollHeight;
     }
@@ -45,8 +45,8 @@ function renderUserList(users) {
     const div = document.createElement("div");
     div.classList.add("user-entry");
     if (u.username === username) div.classList.add("meUser");
-    div.innerHTML = <img src="/avatar/${u.avatarId || "default.png"}">
-                     <span style="color:${u.rol==="admin"?"#ff4444":"#c084ff"}">${u.username}</span>;
+    div.innerHTML = `<img src="/avatar/${u.avatarId || "default.png"}">
+                     <span style="color:${u.rol==="admin"?"#ff4444":"#c084ff"}">${u.username}</span>`;
     side.appendChild(div);
   });
 }
@@ -64,7 +64,7 @@ function sendMsg() {
   if (!msg) return;
 
   if (replyingTo) {
-    msg = [responde a ${replyingTo}]: ${msg};
+    msg = `[responde a ${replyingTo}]: ${msg}`;
     replyingTo = null;
   }
 
@@ -83,17 +83,17 @@ function addMessage(m) {
   const time = m.time ? new Date(m.time).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "";
 
   if (!m.user) {
-    line.innerHTML = <div class="systemMsg" style="white-space: pre-wrap;">${m.text}</div>;
+    line.innerHTML = `<div class="systemMsg" style="white-space: pre-wrap;">${m.text}</div>`;
     if (m.imageUrl) {
-      line.innerHTML += <br><img src="${m.imageUrl}" style="max-width:200px; max-height:200px; border-radius:6px;">;
+      line.innerHTML += `<br><img src="${m.imageUrl}" style="max-width:200px; max-height:200px; border-radius:6px;">`;
     }
   } else {
     const nameColor = m.rol==="admin"?"nameAdmin":"nameNormal";
     if (m.deleted) {
-      line.innerHTML = <div class="msgBubble"><i style="opacity:0.6">mensaje eliminado</i><span class="timeStamp">${time}</span></div>;
+      line.innerHTML = `<div class="msgBubble"><i style="opacity:0.6">mensaje eliminado</i><span class="timeStamp">${time}</span></div>`;
     } else {
       line.innerHTML = 
-        <div class="msgBubble">
+        `<div class="msgBubble">
           <img src="/avatar/${m.avatarId||"default.png"}">
           <div class="textBlock">
             <b class="${nameColor}">${m.user}</b>
@@ -104,16 +104,16 @@ function addMessage(m) {
             <span class="dots">⋮</span>
             <div class="menu hidden">
               <button class="replyBtn">Responder</button>
-              ${m.user===username?<button class="deleteBtn">Eliminar</button>:""}
+              ${m.user===username?`<button class="deleteBtn">Eliminar</button>`:""}
             </div>
           </div>
-        </div>
+        </div>`
       ;
       const replyBtn = line.querySelector(".replyBtn");
       if (replyBtn) replyBtn.addEventListener("click", () => {
         replyingTo = m.user;
         const input = document.getElementById("msgBox");
-        input.value = @${m.user} ;
+        input.value = `@${m.user} `;
         input.focus();
       });
     }
@@ -126,12 +126,17 @@ function addMessage(m) {
 // Menú 3 puntitos
 document.addEventListener("click", e => {
   if (e.target.classList.contains("dots")) {
+    // Esconder todos los menús, excepto el actual
+    document.querySelectorAll(".menu").forEach(m => m.classList.add("hidden"));
+    
     const menu = e.target.nextElementSibling;
     menu.classList.toggle("hidden");
-  } else {
+  } else if (!e.target.closest(".menu")) {
+    // Si se hace clic fuera de cualquier menú, esconder todos
     document.querySelectorAll(".menu").forEach(m => m.classList.add("hidden"));
   }
 });
+
 
 // Eliminar mensaje
 document.addEventListener("click", e => {
@@ -163,7 +168,9 @@ document.getElementById("changeAvatarBtn").addEventListener("click", async () =>
 
   if (data.ok) {
     alert("Avatar actualizado!");
-    socket.emit("request-userlist");
+    // Nota: El backend debería enviar la lista actualizada a todos o el cliente recargar su avatar. 
+    // Como el `user-list` se actualiza al entrar, quizás haga falta un evento específico. 
+    // Por ahora, asumimos que el backend maneja la actualización del avatar o se requiere recargar.
   } else {
     alert("Error subiendo imagen");
   }
