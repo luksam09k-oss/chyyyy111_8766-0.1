@@ -6,77 +6,54 @@ let replyingTo = null;
 
 // Unirse al chat
 socket.emit("join-room", { room: "chat", username, rol }, (res) => {
-  if (!res.ok) {
-    alert("No puedes entrar");
-    return;
-  }
+  if (!res.ok) { alert("No puedes entrar"); return; }
   res.history.forEach(addMessage);
 });
 
-// ===============================
-// EVENTOS SOCKET
-// ===============================
+// Eventos
 socket.on("new-message", addMessage);
 socket.on("system-message", addMessage);
-socket.on("clear-chat", () => {
-  document.getElementById("messages").innerHTML = "";
-});
+socket.on("clear-chat", () => document.getElementById("messages").innerHTML = "");
 socket.on("user-list", renderUserList);
-
 socket.on("message-deleted", ({ _id }) => {
-  const msg = document.querySelector(`.message[data-id="${_id}"]`);
+  const msg = document.querySelector(.message[data-id="${_id}"]);
   if (!msg) return;
-  msg.querySelector(".msgBubble").innerHTML =
-    `<i style="opacity:0.6">mensaje eliminado</i>`;
+  msg.querySelector(".msgBubble").innerHTML = <i style="opacity:0.6">mensaje eliminado</i>;
 });
-
-// typing…
 socket.on("user-typing", ({ user, typing }) => {
   const box = document.getElementById("messages");
-  let el = document.getElementById("typing-" + user);
-
+  let typingEl = document.getElementById(typing-${user});
   if (typing) {
-    if (!el) {
-      el = document.createElement("div");
-      el.id = "typing-" + user;
-      el.className = "systemMsg";
-      el.textContent = `${user} está escribiendo...`;
-      box.appendChild(el);
+    if (!typingEl) {
+      typingEl = document.createElement("div");
+      typingEl.id = typing-${user};
+      typingEl.className = "systemMsg";
+      typingEl.textContent = ${user} está escribiendo...;
+      box.appendChild(typingEl);
       box.scrollTop = box.scrollHeight;
     }
   } else {
-    el?.remove();
+    typingEl?.remove();
   }
 });
 
-// ===============================
-// RENDER LISTA DE USUARIOS
-// ===============================
+// Render usuarios conectados
 function renderUserList(users) {
   const side = document.getElementById("user-list");
   side.innerHTML = "";
-
   users.forEach(u => {
     const div = document.createElement("div");
-    div.className = "user-entry";
-
+    div.classList.add("user-entry");
     if (u.username === username) div.classList.add("meUser");
-
-    div.innerHTML = `
-      <img src="/avatar/${u.avatarId || "default.png"}">
-      <span style="color:${u.rol === "admin" ? "#ff4444" : "#c084ff"}">${u.username}</span>
-    `;
-
+    div.innerHTML = <img src="/avatar/${u.avatarId || "default.png"}">
+                     <span style="color:${u.rol==="admin"?"#ff4444":"#c084ff"}">${u.username}</span>;
     side.appendChild(div);
   });
 }
 
-// ===============================
-// ENVIAR MENSAJE
-// ===============================
-document.getElementById("msgBox").addEventListener("keypress", (e) => {
+// Enviar con Enter
+document.getElementById("msgBox").addEventListener("keypress", e => {
   socket.emit("typing", e.key !== "Enter" && e.target.value.trim() !== "");
-
   if (e.key === "Enter") sendMsg();
 });
 document.getElementById("sendBtn").addEventListener("click", sendMsg);
@@ -87,7 +64,7 @@ function sendMsg() {
   if (!msg) return;
 
   if (replyingTo) {
-    msg = `[responde a ${replyingTo}]: ${msg}`;
+    msg = [responde a ${replyingTo}]: ${msg};
     replyingTo = null;
   }
 
@@ -96,62 +73,47 @@ function sendMsg() {
   socket.emit("typing", false);
 }
 
-// ===============================
-// RENDER MENSAJES
-// ===============================
+// Render mensajes
 function addMessage(m) {
   const box = document.getElementById("messages");
   const line = document.createElement("div");
   line.classList.add("message");
   line.dataset.id = m._id || "";
 
-  const time = m.time
-    ? new Date(m.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    : "";
+  const time = m.time ? new Date(m.time).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "";
 
-  // Mensaje del sistema
   if (!m.user) {
-    line.innerHTML = `
-      <div class="systemMsg" style="white-space: pre-wrap;">${m.text}</div>
-    `;
+    line.innerHTML = <div class="systemMsg" style="white-space: pre-wrap;">${m.text}</div>;
     if (m.imageUrl) {
-      line.innerHTML += `<br><img src="${m.imageUrl}" 
-        style="max-width:200px; max-height:200px; border-radius:6px;">`;
+      line.innerHTML += <br><img src="${m.imageUrl}" style="max-width:200px; max-height:200px; border-radius:6px;">;
     }
   } else {
-    const nameColor = m.rol === "admin" ? "nameAdmin" : "nameNormal";
-
+    const nameColor = m.rol==="admin"?"nameAdmin":"nameNormal";
     if (m.deleted) {
-      line.innerHTML = `
-        <div class="msgBubble">
-          <i style="opacity:0.6">mensaje eliminado</i>
-          <span class="timeStamp">${time}</span>
-        </div>`;
+      line.innerHTML = <div class="msgBubble"><i style="opacity:0.6">mensaje eliminado</i><span class="timeStamp">${time}</span></div>;
     } else {
-      line.innerHTML = `
+      line.innerHTML = 
         <div class="msgBubble">
-          <img src="/avatar/${m.avatarId || "default.png"}">
+          <img src="/avatar/${m.avatarId||"default.png"}">
           <div class="textBlock">
             <b class="${nameColor}">${m.user}</b>
             <span>${m.text}</span>
             <div class="timeStamp">${time}</div>
           </div>
-
           <div class="msgOptions">
             <span class="dots">⋮</span>
             <div class="menu hidden">
               <button class="replyBtn">Responder</button>
-              ${m.user === username ? `<button class="deleteBtn">Eliminar</button>` : ""}
+              ${m.user===username?<button class="deleteBtn">Eliminar</button>:""}
             </div>
           </div>
         </div>
-      `;
-
+      ;
       const replyBtn = line.querySelector(".replyBtn");
       if (replyBtn) replyBtn.addEventListener("click", () => {
         replyingTo = m.user;
         const input = document.getElementById("msgBox");
-        input.value = `@${m.user} `;
+        input.value = @${m.user} ;
         input.focus();
       });
     }
@@ -161,10 +123,8 @@ function addMessage(m) {
   box.scrollTop = box.scrollHeight;
 }
 
-// ===============================
-// MENÚ DE 3 PUNTITOS
-// ===============================
-document.addEventListener("click", (e) => {
+// Menú 3 puntitos
+document.addEventListener("click", e => {
   if (e.target.classList.contains("dots")) {
     const menu = e.target.nextElementSibling;
     menu.classList.toggle("hidden");
@@ -173,10 +133,8 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// ===============================
-// ELIMINAR MENSAJE
-// ===============================
-document.addEventListener("click", (e) => {
+// Eliminar mensaje
+document.addEventListener("click", e => {
   if (e.target.classList.contains("deleteBtn")) {
     const msgDiv = e.target.closest(".message");
     const id = msgDiv.dataset.id;
@@ -184,18 +142,14 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// ===============================
-// LOGOUT
-// ===============================
+// Logout
 document.getElementById("logoutBtn").addEventListener("click", () => {
   localStorage.removeItem("username");
   localStorage.removeItem("rol");
   location.href = "/login.html";
 });
 
-// ===============================
-// CAMBIAR AVATAR
-// ===============================
+// Cambiar avatar
 document.getElementById("changeAvatarBtn").addEventListener("click", async () => {
   const fileInput = document.getElementById("avatarInput");
   if (!fileInput.files.length) return alert("Selecciona una imagen");
@@ -204,16 +158,12 @@ document.getElementById("changeAvatarBtn").addEventListener("click", async () =>
   formData.append("avatar", fileInput.files[0]);
   formData.append("username", username);
 
-  const res = await fetch("/upload-avatar", {
-    method: "POST",
-    body: formData
-  });
-
+  const res = await fetch("/upload-avatar", { method:"POST", body:formData });
   const data = await res.json();
 
   if (data.ok) {
     alert("Avatar actualizado!");
-    socket.emit("request-userlist"); // refrescar lista
+    socket.emit("request-userlist");
   } else {
     alert("Error subiendo imagen");
   }
