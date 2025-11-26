@@ -9,6 +9,8 @@ RUN npm install --production
 # Copiar todo el proyecto
 COPY . .
 
-EXPOSE 3000
+EXPOSE 10000
+
+ENV PORT=10000
 
 CMD ["node", "server.js"]
