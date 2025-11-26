@@ -27,24 +27,22 @@ app.use(express.static("public"));
 // ==================================================
 const mongoURI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/chatroom";
 
+// createConnection para GridFS y mongoose.connect para el ORM
 const conn = mongoose.createConnection(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
 
-mongoose
-  .connect(mongoURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  })
-  .then(() => console.log("Mongoose conectado"))
-  .catch((err) => console.error("Error mongoose:", err));
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log("Mongoose conectado"))
+.catch(err => console.error("Error mongoose:", err));
 
 let gfs;
 conn.once("open", () => {
-  gfs = new mongoose.mongo.GridFSBucket(conn.db, {
-    bucketName: "uploads"
-  });
+  gfs = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: "uploads" });
   console.log("MongoDB + GridFS listo (conn abierta)");
 });
 
@@ -91,11 +89,9 @@ app.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
     const username = req.body.username;
     if (!username || !req.file) return res.json({ ok: false });
 
-    await User.findOneAndUpdate(
-      { username },
-      { avatarId: req.file.filename }
-    );
-
+    // req.file.filename es el nombre asignado por GridFsStorage
+    await User.findOneAndUpdate({ username }, { avatarId: req.file.filename });
+    // emitir actualización de lista online para que clientes refresquen
     io.emit("user-list", Object.values(online));
     res.json({ ok: true, avatarId: req.file.filename });
   } catch (e) {
@@ -110,15 +106,12 @@ app.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
 app.get("/avatar/:filename", async (req, res) => {
   try {
     const filename = req.params.filename;
-    const file = await conn
-      .db
-      .collection("uploads.files")
-      .findOne({ filename });
-
+    // buscar en GridFS
+    const file = await conn.db.collection("uploads.files").findOne({ filename });
     if (!file) {
+      // si no está en GridFS, servir el default estático
       return res.sendFile(path.join(__dirname, "public", "default.png"));
     }
-
     gfs.openDownloadStreamByName(filename).pipe(res);
   } catch (e) {
     return res.sendFile(path.join(__dirname, "public", "default.png"));
@@ -136,14 +129,13 @@ io.on("connection", (socket) => {
   // TYPING
   socket.on("typing", (isTyping) => {
     if (socket.username) {
-      socket
-        .to("chat")
-        .emit("user-typing", { user: socket.username, typing: isTyping });
+      socket.to("chat").emit("user-typing", { user: socket.username, typing: isTyping });
     }
   });
 
   // JOIN ROOM
-  socket.on("join-room", async ({ room, username }, cb = () => {}) => {
+  // aceptamos room, username, rol (rol lo ignora el servidor y usa la BD)
+  socket.on("join-room", async ({ room, username, rol }, cb = () => {}) => {
     try {
       if (!username) return cb({ ok: false });
       const user = await User.findOne({ username }).lean();
@@ -155,20 +147,27 @@ io.on("connection", (socket) => {
       socket.rol = user.rol;
       socket.avatarId = user.avatarId || "default.png";
 
-      online[username] = {
-        username,
-        rol: user.rol,
-        avatarId: socket.avatarId
-      };
+      online[username] = { username, rol: user.rol, avatarId: socket.avatarId };
 
-      // **ARREGLADO: EL HISTORIAL AHORA VIENE ORDENADO Y COMPLETO**
-      const history = await Message.find({ room })
-        .sort({ time: 1 })
-        .limit(200)
-        .lean();
+      // **Aquí cargamos el historial desde MongoDB y lo enviamos en el callback**
+      const history = await Message.find({ room }).sort({ time: 1 }).limit(100).lean();
 
-      cb({ ok: true, history });
+      // Sanitizar/normalizar valores del historial para evitar problemas en cliente
+      const safeHistory = history.map(h => {
+        return {
+          _id: h._id,
+          room: h.room,
+          user: h.user || "Desconocido",
+          text: h.text || "",
+          rol: h.rol || "user",
+          avatarId: h.avatarId || "default.png",
+          deleted: !!h.deleted,
+          time: h.time ? h.time : Date.now()
+        };
+      });
 
+      cb({ ok: true, history: safeHistory });
+      // avisar a todos (o podrías hacer io.to(room).emit si quieres sólo la sala)
       io.emit("user-list", Object.values(online));
     } catch (err) {
       console.error("join-room error:", err);
@@ -181,12 +180,151 @@ io.on("connection", (socket) => {
     try {
       if (!socket.username) return cb?.({ ok: false });
 
-      // ------------------------------------------------------
-      // *** ARREGLO CRÍTICO ***
-      // LA BASE DE DATOS NO TENÍA time → ahora se guarda SIEMPRE
-      // ------------------------------------------------------
+      // COMANDOS
+      if (typeof msg === "string" && msg.startsWith("/")) {
+        if (socket.rol !== "admin") {
+          socket.emit("system-message", { text: "No tienes permisos." });
+          return cb?.({ ok: true });
+        }
+
+        const parts = msg.split(" ");
+        const cmd = parts[0];
+        const target = parts[1];
+        const rest = parts.slice(2);
+
+        switch (cmd) {
+          case "/clear":
+            await Message.deleteMany({ room: "chat" });
+            io.to("chat").emit("clear-chat");
+            break;
+          case "/ban":
+            if (!target) break;
+            await User.updateOne({ username: target }, { banned: true });
+            io.emit("system-message", { text: `${target} fue baneado` });
+            break;
+          case "/unban":
+            if (!target) break;
+            await User.updateOne({ username: target }, { banned: false });
+            io.emit("system-message", { text: `${target} fue desbaneado` });
+            break;
+
+          case "/admin":
+            {
+              const subcmd = target;
+              const arg = rest.join(" "); // reconstruye todo como filename o parámetros
+
+              switch(subcmd) {
+                case "list-images":
+                  {
+                    const files = await conn.db.collection("uploads.files").find({}).toArray();
+                    if (!files.length) {
+                      socket.emit("system-message", { text: "No hay imágenes" });
+                    } else {
+                      files.forEach(f => {
+                        socket.emit("system-message", { text: f.filename, imageUrl: `/avatar/${f.filename}` });
+                      });
+                    }
+                  }
+                  break;
+
+                case "show-image":
+                  if (!arg) {
+                    socket.emit("system-message", { text: "Especifica un filename" });
+                    break;
+                  }
+                  {
+                    const file = await conn.db.collection("uploads.files").findOne({ filename: arg });
+                    if (!file) {
+                      socket.emit("system-message", { text: "Archivo no encontrado" });
+                    } else {
+                      socket.emit("system-message", {
+                        text: `Archivo: ${file.filename}\nTamaño: ${file.length} bytes\nTipo: ${file.contentType}\nSubida: ${file.uploadDate}`,
+                        imageUrl: `/avatar/${file.filename}`
+                      });
+                    }
+                  }
+                  break;
+
+                case "list-messages":
+                  {
+                    // mostramos últimos 50 mensajes (más reciente primero)
+                    const messages = await Message.find({}).sort({ time: -1 }).limit(50).lean();
+                    if (!messages.length) {
+                      socket.emit("system-message", { text: "No hay mensajes" });
+                    } else {
+                      messages.forEach(m => {
+                        // formatear time si existe
+                        let timeStr = "";
+                        if (m.time && m.time.toISOString) timeStr = m.time.toISOString();
+                        else if (m.time) timeStr = new Date(m.time).toISOString();
+
+                        socket.emit("system-message", {
+                          text: `[${timeStr}] ${m.user || "Desconocido"}: ${m.text} (deleted: ${!!m.deleted})`
+                        });
+                      });
+                    }
+                  }
+                  break;
+
+                case "help":
+                  {
+                    const cmds = `/clear - Limpiar chat
+/ban <user> - Banear usuario
+/unban <user> - Desbanear usuario
+/admin list-images - Listar imágenes
+/admin show-image <filename> - Ver info de imagen
+/admin list-messages - Listar últimos mensajes
+/admin new-user <username> <password> <rol> - Crear nuevo usuario
+/help - Mostrar comandos`;
+                    socket.emit("system-message", { text: cmds });
+                  }
+                  break;
+
+                case "new-user":
+                  {
+                    const newUser = rest[0];       // username
+                    const newPass = rest[1];       // password
+                    const newRol  = rest[2] || "user"; // rol por defecto
+
+                    if (!newUser || !newPass) {
+                      socket.emit("system-message", { text: "Faltan parámetros. Uso: /admin new-user <username> <password> <rol>" });
+                      break;
+                    }
+
+                    const exists = await User.findOne({ username: newUser });
+                    if (exists) {
+                      socket.emit("system-message", { text: "Usuario ya existe" });
+                      break;
+                    }
+
+                    const user = new User({
+                      username: newUser,
+                      password: newPass,
+                      rol: newRol,
+                      banned: false,
+                      avatarId: "default.png"
+                    });
+                    await user.save();
+                    socket.emit("system-message", { text: `Usuario ${newUser} creado con rol ${newRol}` });
+                  }
+                  break;
+
+                default:
+                  socket.emit("system-message", { text: "Subcomando desconocido" });
+              }
+            }
+            break;
+
+          default:
+            socket.emit("system-message", { text: "Comando desconocido" });
+        }
+
+        return cb?.({ ok: true });
+      }
 
       // MENSAJE NORMAL
+      // Guardamos siempre 'time' para que el cliente pueda ordenarlo
+      const now = Date.now();
       const m = new Message({
         room: "chat",
         user: socket.username,
@@ -194,11 +332,11 @@ io.on("connection", (socket) => {
         rol: socket.rol,
         avatarId: socket.avatarId,
         deleted: false,
-        time: Date.now() // 🔥🔥🔥 FIX IMPORTANTE
+        time: now
       });
-
       await m.save();
 
+      // Emitimos el mensaje con time garantizado
       io.to("chat").emit("new-message", {
         _id: m._id,
         room: "chat",
@@ -206,7 +344,7 @@ io.on("connection", (socket) => {
         text: msg,
         rol: socket.rol,
         avatarId: socket.avatarId,
-        time: m.time,
+        time: now,
         deleted: false
       });
 
@@ -222,11 +360,11 @@ io.on("connection", (socket) => {
     try {
       const msg = await Message.findById(msgId);
       if (!msg) return;
+      // permitir borrar si es autor o admin
       if (msg.user !== socket.username && socket.rol !== "admin") return;
 
       msg.deleted = true;
       await msg.save();
-
       io.to("chat").emit("message-deleted", { _id: msgId });
     } catch (err) {
       console.error("delete-message error:", err);
@@ -246,6 +384,4 @@ io.on("connection", (socket) => {
 // SERVIDOR
 // ==================================================
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () =>
-  console.log("Servidor corriendo en http://localhost:" + PORT)
-);
+server.listen(PORT, () => console.log("Servidor corriendo en http://localhost:" + PORT));
