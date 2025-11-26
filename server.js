@@ -206,8 +206,7 @@ io.on("connection", (socket) => {
               break;
 
             case "help":
-              const cmds = `
-/clear - Limpiar chat
+              const cmds = `/clear - Limpiar chat
 /ban <user> - Banear usuario
 /unban <user> - Desbanear usuario
 /admin list-images - Listar imágenes
@@ -215,8 +214,7 @@ io.on("connection", (socket) => {
 /admin list-messages - Listar últimos mensajes
 /admin new-user <username> <password> <rol> - Crear nuevo usuario
 /help - Mostrar comandos
-              `;
-              socket.emit("system-message", { text: cmds.trim() });
+              `;              socket.emit("system-message", { text: cmds.trim() });
               break;
 
             case "new-user":
