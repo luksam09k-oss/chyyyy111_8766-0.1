@@ -99,6 +99,32 @@ app.get("/avatar/:filename", async (req, res) => {
 // ==================================================
 let online = {}; // username → info
 
+// 🔥 AGREGADO: Construir lista de conectados/desconectados
+async function buildUserList() {
+  const all = await User.find({}).lean();
+
+  const connected = [];
+  const disconnected = [];
+
+  all.forEach(u => {
+    if (online[u.username]) {
+      connected.push({
+        username: u.username,
+        rol: u.rol,
+        avatarId: u.avatarId
+      });
+    } else {
+      disconnected.push({
+        username: u.username,
+        rol: u.rol,
+        avatarId: u.avatarId
+      });
+    }
+  });
+
+  return { connected, disconnected };
+}
+
 io.on("connection", (socket) => {
   console.log("Nuevo cliente conectado");
 
@@ -125,7 +151,8 @@ io.on("connection", (socket) => {
 
       const history = await Message.find({ room }).sort({ time: 1 }).limit(100).lean();
       cb({ ok: true, history });
-      io.emit("user-list", Object.values(online));
+
+      io.emit("user-list", await buildUserList());
     } catch {
       cb({ ok: false });
     }
@@ -162,7 +189,7 @@ io.on("connection", (socket) => {
 
         case "/admin":
           const subcmd = target;
-          const arg = rest.join(" "); // reconstruye todo como filename o parámetros
+          const arg = rest.join(" ");
 
           switch(subcmd) {
             case "list-images":
@@ -213,19 +240,19 @@ io.on("connection", (socket) => {
 /admin list-images - Listar imágenes
 /admin show-image <filename> - Ver info de imagen
 /admin list-messages - Listar últimos mensajes
-/admin new-user <username> <password> <rol> - Crear nuevo usuario
+/admin new-user <username> <password> <rol> - Crear usuario
 /help - Mostrar comandos
               `;
               socket.emit("system-message", { text: cmds.trim() });
               break;
 
             case "new-user":
-              const newUser = rest[0];       // username
-              const newPass = rest[1];       // password
-              const newRol  = rest[2] || "user"; // rol por defecto
+              const newUser = rest[0];
+              const newPass = rest[1];
+              const newRol  = rest[2] || "user";
 
               if (!newUser || !newPass) {
-                socket.emit("system-message", { text: "Faltan parámetros. Uso: /admin new-user <username> <password> <rol>" });
+                socket.emit("system-message", { text: "Faltan parámetros" });
                 break;
               }
 
@@ -235,15 +262,15 @@ io.on("connection", (socket) => {
                 break;
               }
 
-              const user = new User({
+              await new User({
                 username: newUser,
                 password: newPass,
                 rol: newRol,
                 banned: false,
                 avatarId: "default.png"
-              });
-              await user.save();
-              socket.emit("system-message", { text: `Usuario ${newUser} creado con rol ${newRol}` });
+              }).save();
+
+              socket.emit("system-message", { text: `Usuario ${newUser} creado` });
               break;
 
             default:
@@ -294,10 +321,10 @@ io.on("connection", (socket) => {
   });
 
   // DESCONECTAR
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     if (socket.username) {
       delete online[socket.username];
-      io.emit("user-list", Object.values(online));
+      io.emit("user-list", await buildUserList());
     }
   });
 });
