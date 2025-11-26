@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatroom 2.0 - Fuera de Servicio</title>
     <style>
-
+   
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
+            text-align: center; 
             padding: 50px;
             margin: 0;
             display: flex;
@@ -56,16 +56,17 @@
             border-radius: 8px;
             border: 2px solid #64ffda;
             opacity: 0.9;
+           
         }
 
-   
+
         .button-wrapper {
-            position: relative; 
+            position: relative;
             display: inline-block;
             margin-top: 20px;
         }
         #interactiveButton {
-            background-color: #64ffda; 
+            background-color: #64ffda;
             color: #1a1a2e;
             border: none;
             padding: 10px 20px;
@@ -84,17 +85,17 @@
 
         #comboText {
             position: absolute;
-            top: -15px; 
+            top: -15px;
             right: -5px;
             color: #ffa7c4;
             font-weight: bold;
             font-size: 1.2em;
-            opacity: 0; 
+            opacity: 0;
             transition: opacity 0.2s ease;
-            pointer-events: none; 
+            pointer-events: none;
         }
         .show-combo {
-            opacity: 1 !important; 
+            opacity: 1 !important;
         }
     </style>
 </head>
@@ -106,44 +107,43 @@
         <p>MIKU IS A GODDESS!</p>
 
         <img src="MikuNoService.gif" alt="Miku-God-Obvio">
-        
+
         <div class="button-wrapper">
             <button id="interactiveButton">¡DAMM!</button>
             <span id="comboText"></span>
         </div>
-        </div>
+    </div>
 
     <script>
-       
+
         let comboCount = 0;
         let timeoutHandle;
         const button = document.getElementById('interactiveButton');
         const comboText = document.getElementById('comboText');
 
-        const COMBO_DURATION = 2000; 
+        const COMBO_DURATION = 2000;
 
         function resetCombo() {
-           
+
             comboText.classList.remove('show-combo');
             comboCount = 0;
         }
 
         function handleButtonClick() {
             comboCount++;
-            
-            
+
+
             comboText.textContent = `MIKU x${comboCount}`;
             comboText.classList.add('show-combo');
-            
-          
+
+
             if (timeoutHandle) {
                 clearTimeout(timeoutHandle);
             }
-            
+
             timeoutHandle = setTimeout(resetCombo, COMBO_DURATION);
         }
 
-       
         button.addEventListener('click', handleButtonClick);
     </script>
 </body>
