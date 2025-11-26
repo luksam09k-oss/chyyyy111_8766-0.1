@@ -109,6 +109,7 @@ function addMessage(m) {
           </div>
         </div>`
       ;
+
       const replyBtn = line.querySelector(".replyBtn");
       if (replyBtn) replyBtn.addEventListener("click", () => {
         replyingTo = m.user;
@@ -126,17 +127,13 @@ function addMessage(m) {
 // Menú 3 puntitos
 document.addEventListener("click", e => {
   if (e.target.classList.contains("dots")) {
-    // Esconder todos los menús, excepto el actual
     document.querySelectorAll(".menu").forEach(m => m.classList.add("hidden"));
-    
     const menu = e.target.nextElementSibling;
     menu.classList.toggle("hidden");
   } else if (!e.target.closest(".menu")) {
-    // Si se hace clic fuera de cualquier menú, esconder todos
     document.querySelectorAll(".menu").forEach(m => m.classList.add("hidden"));
   }
 });
-
 
 // Eliminar mensaje
 document.addEventListener("click", e => {
@@ -168,9 +165,6 @@ document.getElementById("changeAvatarBtn").addEventListener("click", async () =>
 
   if (data.ok) {
     alert("Avatar actualizado!");
-    // Nota: El backend debería enviar la lista actualizada a todos o el cliente recargar su avatar. 
-    // Como el `user-list` se actualiza al entrar, quizás haga falta un evento específico. 
-    // Por ahora, asumimos que el backend maneja la actualización del avatar o se requiere recargar.
   } else {
     alert("Error subiendo imagen");
   }
