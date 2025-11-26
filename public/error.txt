@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatroom 2.0 - Fuera de Servicio</title>
+    <style>
+        /* --- ESTILOS CSS --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            padding: 50px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #e9e9f3;
+
+        
+            background-image: url('63329cdef4d974c297bd5914efd1f940.gif');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-color: #1a1a2e;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 20px;
+            background-color: rgba(44, 44, 68, 0.9);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        h1 {
+            color: #64ffda;
+            font-size: 3em;
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+        }
+        h2 {
+            color: #ffa7c4;
+            font-size: 1.5em;
+            margin-top: 0;
+        }
+        p {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 5px; /* Menor margen para textos seguidos */
+        }
+
+        /* --- ESTILO DEL RECUADRO DE LA IMAGEN --- */
+        .image-wrapper {
+            /* Centra el contenedor del recuadro */
+            display: inline-block;
+            margin-top: 25px;
+            
+            /* Estilos del Recuadro Claro */
+            background-color: #f0f0f0; /* Fondo del recuadro (casi blanco) */
+            border: 3px solid #64ffda; /* Borde neón turquesa */
+            border-radius: 8px;
+            padding: 10px; /* Espacio entre el borde y la imagen */
+            box-shadow: 0 0 10px rgba(100, 255, 218, 0.5); /* Sombra de brillo neón */
+        }
+        
+        .image-wrapper img {
+            max-width: 100%;
+            height: auto;
+            display: block; /* Asegura que la imagen no tenga espacio extra debajo */
+            /* Quitamos los bordes y márgenes que tenía la imagen directamente */
+            margin: 0;
+            padding: 0;
+            border: none;
+            border-radius: 0;
+            opacity: 1;
+        }
+
+        /* --- ESTILOS DEL BOTÓN COMBO --- */
+        .button-wrapper {
+            position: relative;
+            display: block; /* Cambio a bloque para que el margen auto funcione */
+            width: fit-content; /* Se ajusta al contenido */
+            margin: 20px auto 0 auto; /* Centra el botón horizontalmente */
+        }
+        #interactiveButton {
+            background-color: #64ffda;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.1em;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+        #interactiveButton:hover {
+            background-color: #92ffe6;
+            transform: translateY(-2px);
+        }
+        #interactiveButton:active {
+            transform: translateY(1px);
+        }
+
+        #comboText {
+            position: absolute;
+            top: -15px;
+            right: -5px;
+            color: #ffa7c4;
+            font-weight: bold;
+            font-size: 1.2em;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+        .show-combo {
+            opacity: 1 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CHATROOM 2.0</h1>
+        <h2>⚠️ Temporalmente Fuera de Servicio ⚠️</h2>
+        <p>Problemas tecnicos serios gente.....</p>
+        <p>MIKU IS A GODDESS!</p>
+
+        <div class="image-wrapper">
+            <img src="MikuNoService.gif" alt="Miku-God-Obvio">
+        </div>
+
+        <div class="button-wrapper">
+            <button id="interactiveButton">¡DAMM!</button>
+            <span id="comboText"></span>
+        </div>
+    </div>
+
+    <script>
+        /* --- CÓDIGO JAVASCRIPT --- */
+        let comboCount = 0;
+        let timeoutHandle;
+        const button = document.getElementById('interactiveButton');
+        const comboText = document.getElementById('comboText');
+
+        const COMBO_DURATION = 2000;
+
+        function resetCombo() {
+            comboText.classList.remove('show-combo');
+            comboCount = 0;
+        }
+
+        function handleButtonClick() {
+            comboCount++;
+
+            comboText.textContent = `MIKU x${comboCount}`;
+            comboText.classList.add('show-combo');
+
+            if (timeoutHandle) {
+                clearTimeout(timeoutHandle);
+            }
+
+            timeoutHandle = setTimeout(resetCombo, COMBO_DURATION);
+        }
+
+        button.addEventListener('click', handleButtonClick);
+    </script>
+</body>
+</html>
