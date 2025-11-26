@@ -1,220 +1,251 @@
-// =========================
-// IMPORTS
-// =========================
+// server.js
+// ===============================
+// server.js ADMIN + AVATARES + ELIMINAR MENSAJES + RESPONDER + PANEL ADMIN
+// ===============================
 const express = require("express");
-const app = express();
-const http = require("http");
-const server = http.createServer(app);
-const { Server } = require("socket.io");
-const io = new Server(server);
 const mongoose = require("mongoose");
-const cors = require("cors");
+const http = require("http");
+const socketio = require("socket.io");
 const path = require("path");
-
-// =========================
-// MIDDLEWARE
-// =========================
-app.use(cors());
-app.use(express.json());
-app.use(express.static("public"));
-app.use("/avatar", express.static("avatars"));
-
-// =========================
-// MONGO DB
-// =========================
-mongoose.connect(process.env.MONGO_URL || "mongodb://localhost/chatapp")
-  .then(() => console.log("MongoDB conectado"))
-  .catch(err => console.error("Error Mongo:", err));
-
-// =========================
-// SCHEMAS
-// =========================
-const userSchema = new mongoose.Schema({
-  username: String,
-  password: String,
-  rol: String,
-  avatarId: String
-});
-
-const messageSchema = new mongoose.Schema({
-  room: String,
-  user: String,
-  rol: String,
-  text: String,
-  avatarId: String,
-  time: Number,
-  deleted: Boolean,
-});
-
-const User = mongoose.model("User", userSchema);
-const Message = mongoose.model("Message", messageSchema);
-
-// =========================
-// AVATARS
-// =========================
 const multer = require("multer");
-const fs = require("fs");
+const { GridFsStorage } = require("multer-gridfs-storage");
+const cors = require("cors");
 
-if (!fs.existsSync("avatars")) fs.mkdirSync("avatars");
+const User = require("./User");
+const Message = require("./Message");
 
-const storage = multer.diskStorage({
-  destination: (_, __, cb) => cb(null, "avatars"),
-  filename: (_, file, cb) => {
-    const name = Date.now() + "_" + file.originalname;
-    cb(null, name);
-  }
+const app = express();
+const server = http.createServer(app);
+const io = socketio(server, { cors: { origin: "*" } });
+
+app.use(express.json());
+app.use(cors());
+app.use(express.static("public"));
+
+// ==================================================
+// Mongo + GridFS
+// ==================================================
+const mongoURI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/chatroom";
+
+const conn = mongoose.createConnection(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
+mongoose
+  .connect(mongoURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  })
+  .then(() => console.log("Mongoose conectado"))
+  .catch((err) => console.error("Error mongoose:", err));
+
+let gfs;
+conn.once("open", () => {
+  gfs = new mongoose.mongo.GridFSBucket(conn.db, {
+    bucketName: "uploads"
+  });
+  console.log("MongoDB + GridFS listo (conn abierta)");
+});
+
+// GridFS Storage
+const storage = new GridFsStorage({
+  url: mongoURI,
+  file: (req, file) => ({
+    filename: Date.now() + "_" + file.originalname,
+    bucketName: "uploads"
+  })
 });
 const upload = multer({ storage });
 
-// Upload avatar
-app.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
-  if (!req.file) return res.json({ ok: false });
-
-  await User.updateOne(
-    { username: req.body.username },
-    { $set: { avatarId: req.file.filename } }
-  );
-
-  res.json({ ok: true });
-});
-
-// =========================
-// LOGIN ENDPOINT
-// =========================
+// ==================================================
+// LOGIN
+// ==================================================
 app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
+  try {
+    const { user, pass } = req.body;
+    if (!user || !pass) return res.json({ ok: false });
 
-  const u = await User.findOne({ username });
-  if (!u) return res.json({ ok: false, error: "Usuario no existe" });
+    const found = await User.findOne({ username: user }).lean();
+    if (!found) return res.json({ ok: false });
+    if (found.password !== pass) return res.json({ ok: false });
+    if (found.banned) return res.json({ ok: false, reason: "banned" });
 
-  if (u.password !== password)
-    return res.json({ ok: false, error: "Contraseña incorrecta" });
-
-  res.json({ ok: true, user: u });
+    res.json({
+      ok: true,
+      user: found.username,
+      rol: found.rol,
+      avatarId: found.avatarId || "default.png"
+    });
+  } catch (e) {
+    console.error(e);
+    res.json({ ok: false });
+  }
 });
 
-// =========================
-// SOCKET.IO
-// =========================
-let connectedUsers = {}; // socket.id → { username, rol, avatarId }
+// ==================================================
+// SUBIR AVATAR
+// ==================================================
+app.post("/upload-avatar", upload.single("avatar"), async (req, res) => {
+  try {
+    const username = req.body.username;
+    if (!username || !req.file) return res.json({ ok: false });
+
+    await User.findOneAndUpdate(
+      { username },
+      { avatarId: req.file.filename }
+    );
+
+    io.emit("user-list", Object.values(online));
+    res.json({ ok: true, avatarId: req.file.filename });
+  } catch (e) {
+    console.log(e);
+    res.json({ ok: false });
+  }
+});
+
+// ==================================================
+// SERVIR AVATAR
+// ==================================================
+app.get("/avatar/:filename", async (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const file = await conn
+      .db
+      .collection("uploads.files")
+      .findOne({ filename });
+
+    if (!file) {
+      return res.sendFile(path.join(__dirname, "public", "default.png"));
+    }
+
+    gfs.openDownloadStreamByName(filename).pipe(res);
+  } catch (e) {
+    return res.sendFile(path.join(__dirname, "public", "default.png"));
+  }
+});
+
+// ==================================================
+// SOCKET.IO CHAT
+// ==================================================
+let online = {}; // username → info
 
 io.on("connection", (socket) => {
-  console.log("Usuario conectado:", socket.id);
+  console.log("Nuevo cliente conectado:", socket.id);
 
-  // =========================
-  // ENTRAR A LA SALA
-  // =========================
-  socket.on("join-room", async ({ room, username, rol }, callback) => {
-    const user = await User.findOne({ username });
-    if (!user) return callback({ ok: false });
-
-    socket.join(room);
-
-    connectedUsers[socket.id] = {
-      username,
-      rol,
-      avatarId: user.avatarId || "default.png",
-      room
-    };
-
-    // HISTORIAL
-    const history = await Message.find({ room }).sort({ time: 1 }).limit(200);
-
-    callback({ ok: true, history });
-
-    updateUserList(room);
-  });
-
-  // =========================
-  // ENVIAR MENSAJE
-  // =========================
-  socket.on("send-message", async (text) => {
-    const u = connectedUsers[socket.id];
-    if (!u) return;
-
-    const msg = new Message({
-      room: u.room,
-      user: u.username,
-      rol: u.rol,
-      avatarId: u.avatarId,
-      text,
-      time: Date.now(),
-      deleted: false
-    });
-
-    await msg.save();
-
-    io.to(u.room).emit("new-message", {
-      _id: msg._id,
-      user: u.username,
-      rol: u.rol,
-      avatarId: u.avatarId,
-      text,
-      time: msg.time
-    });
-  });
-
-  // =========================
-  // ELIMINAR MENSAJE
-  // =========================
-  socket.on("delete-message", async (id) => {
-    const u = connectedUsers[socket.id];
-    if (!u) return;
-
-    const msg = await Message.findById(id);
-    if (!msg) return;
-
-    if (msg.user !== u.username) return;
-
-    await Message.updateOne({ _id: id }, { $set: { deleted: true } });
-
-    io.to(u.room).emit("message-deleted", { _id: id });
-  });
-
-  // =========================
   // TYPING
-  // =========================
-  socket.on("typing", (typing) => {
-    const u = connectedUsers[socket.id];
-    if (!u) return;
-
-    io.to(u.room).emit("user-typing", {
-      user: u.username,
-      typing
-    });
+  socket.on("typing", (isTyping) => {
+    if (socket.username) {
+      socket
+        .to("chat")
+        .emit("user-typing", { user: socket.username, typing: isTyping });
+    }
   });
 
-  // =========================
-  // DESCONECTAR
-  // =========================
-  socket.on("disconnect", () => {
-    const u = connectedUsers[socket.id];
-    if (u) {
-      const room = u.room;
-      delete connectedUsers[socket.id];
-      updateUserList(room);
+  // JOIN ROOM
+  socket.on("join-room", async ({ room, username }, cb = () => {}) => {
+    try {
+      if (!username) return cb({ ok: false });
+      const user = await User.findOne({ username }).lean();
+      if (!user) return cb({ ok: false });
+      if (user.banned) return cb({ ok: false, reason: "banned" });
+
+      socket.join(room);
+      socket.username = username;
+      socket.rol = user.rol;
+      socket.avatarId = user.avatarId || "default.png";
+
+      online[username] = {
+        username,
+        rol: user.rol,
+        avatarId: socket.avatarId
+      };
+
+      // **ARREGLADO: EL HISTORIAL AHORA VIENE ORDENADO Y COMPLETO**
+      const history = await Message.find({ room })
+        .sort({ time: 1 })
+        .limit(200)
+        .lean();
+
+      cb({ ok: true, history });
+
+      io.emit("user-list", Object.values(online));
+    } catch (err) {
+      console.error("join-room error:", err);
+      cb({ ok: false });
     }
-    console.log("Usuario desconectado:", socket.id);
+  });
+
+  // ENVIAR MENSAJE + COMANDOS
+  socket.on("send-message", async (msg, cb) => {
+    try {
+      if (!socket.username) return cb?.({ ok: false });
+
+      // ------------------------------------------------------
+      // *** ARREGLO CRÍTICO ***
+      // LA BASE DE DATOS NO TENÍA time → ahora se guarda SIEMPRE
+      // ------------------------------------------------------
+
+      // MENSAJE NORMAL
+      const m = new Message({
+        room: "chat",
+        user: socket.username,
+        text: msg,
+        rol: socket.rol,
+        avatarId: socket.avatarId,
+        deleted: false,
+        time: Date.now() // 🔥🔥🔥 FIX IMPORTANTE
+      });
+
+      await m.save();
+
+      io.to("chat").emit("new-message", {
+        _id: m._id,
+        room: "chat",
+        user: socket.username,
+        text: msg,
+        rol: socket.rol,
+        avatarId: socket.avatarId,
+        time: m.time,
+        deleted: false
+      });
+
+      cb?.({ ok: true });
+    } catch (err) {
+      console.error("send-message error:", err);
+      cb?.({ ok: false });
+    }
+  });
+
+  // ELIMINAR MENSAJE
+  socket.on("delete-message", async (msgId) => {
+    try {
+      const msg = await Message.findById(msgId);
+      if (!msg) return;
+      if (msg.user !== socket.username && socket.rol !== "admin") return;
+
+      msg.deleted = true;
+      await msg.save();
+
+      io.to("chat").emit("message-deleted", { _id: msgId });
+    } catch (err) {
+      console.error("delete-message error:", err);
+    }
+  });
+
+  // DESCONECTAR
+  socket.on("disconnect", () => {
+    if (socket.username) {
+      delete online[socket.username];
+      io.emit("user-list", Object.values(online));
+    }
   });
 });
 
-// =========================
-// USUARIOS CONECTADOS POR SALA
-// =========================
-function updateUserList(room) {
-  const users = Object.values(connectedUsers)
-    .filter(u => u.room === room)
-    .map(u => ({
-      username: u.username,
-      rol: u.rol,
-      avatarId: u.avatarId
-    }));
-
-  io.to(room).emit("user-list", users);
-}
-
-// =========================
-// SERVER LISTEN
-// =========================
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log("Servidor listo en puerto " + PORT));
+// ==================================================
+// SERVIDOR
+// ==================================================
+const PORT = process.env.PORT || 10000;
+server.listen(PORT, () =>
+  console.log("Servidor corriendo en http://localhost:" + PORT)
+);
