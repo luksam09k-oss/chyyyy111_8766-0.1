@@ -1,216 +1,64 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Chatroom 2.0</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      height: 100vh;
-      display: flex;
-      background: #2f3136;
-      color: white;
-    }
-
-    /* LADO USUARIOS */
-    #sidebar {
-      width: 220px;
-      background: #202225;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    #sidebar h3 {
-      margin-top: 0;
-      font-size: 16px;
-      border-bottom: 1px solid #444;
-      padding-bottom: 5px;
-    }
-
-    #user-list {
-      flex: 1;
-      overflow-y: auto;
-    }
-
-    .user-entry {
-      display: flex;
-      align-items: center;
-      padding: 6px;
-      margin-bottom: 6px;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .user-entry:hover {
-      background: #333;
-    }
-
-    .user-entry img {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      margin-right: 6px;
-    }
-
-    /* mi usuario */
-    .meUser {
-      background: #1f6f36 !important;
-    }
-
-    /* CHAT */
-    #chat-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 10px;
-    }
-
-    #messages {
-      flex: 1;
-      overflow-y: auto;
-      background: #36393f;
-      padding: 15px;
-      border-radius: 6px;
-    }
-
-    .message {
-      width: 100%;
-      display: flex;
-      margin-bottom: 10px;
-      animation: fadeIn 0.25s ease-out;
-    }
-
-    .message.me {
-      justify-content: flex-end;
-    }
-
-    .message.other {
-      justify-content: flex-start;
-    }
-
-    .msgBubble {
-      background: #2f3136;
-      padding: 12px;
-      border-radius: 10px;
-      max-width: 65%;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 15px;
-    }
-
-    .message.me .msgBubble {
-      background: #4854e8;
-    }
-
-    .message.other .msgBubble {
-      background: #2c2f34;
-    }
-
-    .msgBubble img {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-    }
-
-    /* colores de nombres */
-    .nameAdmin {
-      color: #ff4444;
-    }
-
-    .nameNormal {
-      color: #c084ff;
-    }
-
-    .systemMsg {
-      background: #444;
-      padding: 6px 12px;
-      border-radius: 6px;
-      margin: auto;
-      opacity: 0.8;
-    }
-
-    /* Animación */
-    @keyframes fadeIn {
-      0% { opacity: 0; transform: translateY(8px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-
-    /* INPUT */
-    #input-container {
-      margin-top: 10px;
-      display: flex;
-    }
-
-    #msgBox {
-      flex: 1;
-      padding: 12px;
-      border-radius: 6px;
-      border: none;
-      font-size: 15px;
-    }
-
-    #sendBtn {
-      padding: 12px 18px;
-      margin-left: 5px;
-      border-radius: 6px;
-      border: none;
-      background: #7289da;
-      color: white;
-      cursor: pointer;
-    }
-
-    button#logoutBtn {
-      margin-top: 10px;
-      padding: 8px;
-      border: none;
-      border-radius: 5px;
-      background: #f04747;
-      color: white;
-      cursor: pointer;
-    }
-
-    #avatarInput {
-      margin-top: 10px;
-    }
-
-    #changeAvatarBtn {
-      margin-top: 5px;
-      padding: 5px;
-      border: none;
-      border-radius: 5px;
-      background: #4caf50;
-      color: white;
-      cursor: pointer;
-    }
-
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatroom 2.0 - Fuera de Servicio</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #1a1a2e; 
+            color: #e9e9f3; 
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 20px;
+            background-color: #2c2c44; 
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5); 
+        }
+        h1 {
+            color: #64ffda; 
+            font-size: 3em;
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+        }
+        h2 {
+            color: #ffa7c4; 
+            font-size: 1.5em;
+            margin-top: 0;
+        }
+        p {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 30px;
+            border-radius: 8px;
+            border: 2px solid #64ffda; 
+            opacity: 0.9; 
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <h1>CHATROOM 2.0</h1>
+        <h2>⚠️ Temporalmente Fuera de Servicio ⚠️</h2>
+        <p>Bueno gente, fallos tecnicos, volvemos cuando arregle esta sopa de codigos....</p>
+        <p>MIKU IS A GODDESS!</p>
 
-  <div id="sidebar">
-    <h3>Usuarios conectados</h3>
-    <div id="user-list"></div>
-
-    <input type="file" id="avatarInput">
-    <button id="changeAvatarBtn">Cambiar Avatar</button>
-
-    <button id="logoutBtn">Logout</button>
-  </div>
-
-  <div id="chat-container">
-    <div id="messages"></div>
-
-    <div id="input-container">
-      <input id="msgBox" placeholder="Escribe tu mensaje...">
-      <button id="sendBtn">Enviar</button>
-    </div>
-  </div>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js"></script>
+        <img src="MikuNoService.gif" alt="Miku-God-Obvio">
+        </div>
 </body>
 </html>
