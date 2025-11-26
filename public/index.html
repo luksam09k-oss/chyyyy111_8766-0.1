@@ -5,34 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatroom 2.0 - Fuera de Servicio</title>
     <style>
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             text-align: center;
             padding: 50px;
-            background-color: #1a1a2e; 
-            color: #e9e9f3; 
             margin: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            color: #e9e9f3;
+
+            background-image: url('URL_DE_TU_GIF_DE_FONDO_AQUI.gif');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-color: #1a1a2e;
         }
         .container {
             max-width: 650px;
             margin: 0 20px;
-            background-color: #2c2c44; 
+            background-color: rgba(44, 44, 68, 0.9);
             padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5); 
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
         }
         h1 {
-            color: #64ffda; 
+            color: #64ffda;
             font-size: 3em;
             margin-bottom: 5px;
             letter-spacing: 2px;
         }
         h2 {
-            color: #ffa7c4; 
+            color: #ffa7c4;
             font-size: 1.5em;
             margin-top: 0;
         }
@@ -46,8 +54,47 @@
             height: auto;
             margin-top: 30px;
             border-radius: 8px;
-            border: 2px solid #64ffda; 
-            opacity: 0.9; 
+            border: 2px solid #64ffda;
+            opacity: 0.9;
+        }
+
+   
+        .button-wrapper {
+            position: relative; 
+            display: inline-block;
+            margin-top: 20px;
+        }
+        #interactiveButton {
+            background-color: #64ffda; 
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.1em;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+        #interactiveButton:hover {
+            background-color: #92ffe6;
+            transform: translateY(-2px);
+        }
+        #interactiveButton:active {
+            transform: translateY(1px);
+        }
+
+        #comboText {
+            position: absolute;
+            top: -15px; 
+            right: -5px;
+            color: #ffa7c4;
+            font-weight: bold;
+            font-size: 1.2em;
+            opacity: 0; 
+            transition: opacity 0.2s ease;
+            pointer-events: none; 
+        }
+        .show-combo {
+            opacity: 1 !important; 
         }
     </style>
 </head>
@@ -55,10 +102,49 @@
     <div class="container">
         <h1>CHATROOM 2.0</h1>
         <h2>⚠️ Temporalmente Fuera de Servicio ⚠️</h2>
-        <p>Bueno gente, fallos tecnicos, volvemos cuando arregle esta sopa de codigos....</p>
+        <p>Problemas tecnicos serios gente.....</p>
         <p>MIKU IS A GODDESS!</p>
 
         <img src="MikuNoService.gif" alt="Miku-God-Obvio">
+        
+        <div class="button-wrapper">
+            <button id="interactiveButton">¡DAMM!</button>
+            <span id="comboText"></span>
         </div>
+        </div>
+
+    <script>
+       
+        let comboCount = 0;
+        let timeoutHandle;
+        const button = document.getElementById('interactiveButton');
+        const comboText = document.getElementById('comboText');
+
+        const COMBO_DURATION = 2000; 
+
+        function resetCombo() {
+           
+            comboText.classList.remove('show-combo');
+            comboCount = 0;
+        }
+
+        function handleButtonClick() {
+            comboCount++;
+            
+            
+            comboText.textContent = `MIKU x${comboCount}`;
+            comboText.classList.add('show-combo');
+            
+          
+            if (timeoutHandle) {
+                clearTimeout(timeoutHandle);
+            }
+            
+            timeoutHandle = setTimeout(resetCombo, COMBO_DURATION);
+        }
+
+       
+        button.addEventListener('click', handleButtonClick);
+    </script>
 </body>
 </html>
