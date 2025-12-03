@@ -1,44 +1,120 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <title>Login</title>
+
   <style>
+    /* === ESTILO GLOBAL === */
     body {
-      background:#1b1b1b;
-      font-family:Arial;
-      color:white;
-      display:flex;
-      height:100vh;
-      justify-content:center;
-      align-items:center;
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+
+      color: #e9e9f3;
+
+      /* Fondo igual al error.html */
+      background-image: url('63329cdef4d974c297bd5914efd1f940.gif');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-color: #1a1a2e;
     }
+
+    /* === TARJETA / GLASS BOX === */
     .box {
-      background:#222;
-      padding:25px;
-      border-radius:10px;
-      width:300px;
+      width: 330px;
+      padding: 35px;
+
+      background-color: rgba(44, 44, 68, 0.88);
+      border-radius: 14px;
+
+      border: 3px solid #64ffda;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.7), 
+                  0 0 12px rgba(100,255,218,0.6);
+
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+
+      text-align: center;
     }
-    input,button {
-      width:100%;
-      padding:10px;
-      margin:10px 0;
-      border-radius:5px;
-      border:none;
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: #64ffda;
+      letter-spacing: 1px;
     }
+
+    /* === INPUTS === */
+    input {
+      width: 100%;
+      padding: 12px;
+
+      border-radius: 7px;
+      border: 2px solid rgba(100,255,218,0.35);
+
+      margin: 10px 0;
+      background: rgba(0,0,0,0.35);
+      color: white;
+
+      font-size: 15px;
+      box-shadow: 0 0 10px rgba(100,255,218,0.2);
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #64ffda;
+      background: rgba(0,0,0,0.5);
+      box-shadow: 0 0 12px rgba(100,255,218,0.5);
+    }
+
+    /* === BOTÓN === */
     button {
-      background:#4caf50;
-      color:white;
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+
+      background: #64ffda;
+      color: #1a1a2e;
+      border: none;
+      border-radius: 7px;
+
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+
+      box-shadow: 0 0 14px rgba(100,255,218,0.7);
+      transition: 0.2s ease;
     }
+
+    button:hover {
+      background: #92ffe6;
+      transform: translateY(-2px);
+    }
+
+    #msg {
+      margin-top: 12px;
+      color: #ffa7c4;
+      font-weight: bold;
+    }
+
   </style>
 </head>
 <body>
 
 <div class="box">
   <h2>Iniciar Sesión</h2>
+
   <input id="user" placeholder="Usuario">
   <input id="pass" placeholder="Contraseña" type="password">
+
   <button onclick="login()">Entrar</button>
+
   <p id="msg"></p>
 </div>
 
