@@ -1,81 +1,138 @@
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <title>Chatroom 2.0</title>
+
   <style>
+    /* ======== ESTILO GLOBAL ======== */
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       height: 100vh;
       display: flex;
-      background: #2f3136;
-      color: white;
+      color: #e9e9f3;
+
+      /* Mismo fondo del error.html */
+      background-image: url('63329cdef4d974c297bd5914efd1f940.gif');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-color: #1a1a2e;
     }
 
-    /* LADO USUARIOS */
+    /* Contenedor principal para añadir blur */
+    #mainWrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      background-color: rgba(44, 44, 68, 0.80);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    /* ======== SIDEBAR ======== */
     #sidebar {
-      width: 220px;
-      background: #202225;
-      padding: 10px;
+      width: 240px;
+      background-color: rgba(30, 30, 50, 0.85);
+      border-right: 3px solid #64ffda;
+      box-shadow: 0 0 15px rgba(100,255,218,0.4);
+      padding: 15px;
       display: flex;
       flex-direction: column;
     }
 
     #sidebar h3 {
       margin-top: 0;
-      font-size: 16px;
-      border-bottom: 1px solid #444;
-      padding-bottom: 5px;
+      font-size: 18px;
+      text-align: center;
+      color: #64ffda;
+      border-bottom: 2px solid #64ffda;
+      padding-bottom: 8px;
+      letter-spacing: 1px;
     }
 
     #user-list {
       flex: 1;
       overflow-y: auto;
+      margin-top: 10px;
     }
 
     .user-entry {
       display: flex;
       align-items: center;
       padding: 6px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
       margin-bottom: 6px;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
-      transition: 0.2s;
+      transition: 0.25s ease;
     }
 
     .user-entry:hover {
-      background: #333;
+      background: rgba(100,255,218,0.15);
+      transform: translateX(3px);
     }
 
     .user-entry img {
-      width: 26px;
-      height: 26px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       margin-right: 6px;
+      border: 2px solid #64ffda;
     }
 
-    /* mi usuario */
     .meUser {
-      background: #1f6f36 !important;
+      background: rgba(100,255,218,0.3) !important;
     }
 
-    /* CHAT */
+    button {
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+      font-weight: bold;
+      transition: 0.25s ease;
+    }
+
+    #changeAvatarBtn {
+      background: #64ffda;
+      color: #1a1a2e;
+      box-shadow: 0 0 10px rgba(100,255,218,0.6);
+    }
+
+    #changeAvatarBtn:hover {
+      background: #92ffe6;
+    }
+
+    #logoutBtn {
+      background: #f04747;
+      color: white;
+      box-shadow: 0 0 8px rgba(255,80,80,0.6);
+    }
+
+    #logoutBtn:hover {
+      background: #ff6b6b;
+    }
+
+    /* ======== CHAT ======== */
     #chat-container {
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 10px;
+      padding: 20px;
     }
 
     #messages {
       flex: 1;
       overflow-y: auto;
-      background: #36393f;
-      padding: 15px;
-      border-radius: 6px;
+      background: rgba(20, 20, 35, 0.65);
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px solid rgba(100,255,218,0.4);
+      box-shadow: 0 0 15px rgba(100,255,218,0.3);
     }
 
     .message {
@@ -94,45 +151,50 @@
     }
 
     .msgBubble {
-      background: #2f3136;
+      background: rgba(60,60,90,0.85);
       padding: 12px;
       border-radius: 10px;
-      max-width: 65%;
+      max-width: 70%;
       display: flex;
       align-items: center;
       gap: 8px;
       font-size: 15px;
+      border: 1px solid rgba(255,255,255,0.1);
     }
 
     .message.me .msgBubble {
-      background: #4854e8;
+      background: rgba(100,255,218,0.3);
+      border: 2px solid #64ffda;
     }
 
     .message.other .msgBubble {
-      background: #2c2f34;
+      background: rgba(255,255,255,0.07);
     }
 
     .msgBubble img {
-      width: 32px;
-      height: 32px;
+      width: 35px;
+      height: 35px;
       border-radius: 50%;
+      border: 2px solid #64ffda;
     }
 
-    /* colores de nombres */
     .nameAdmin {
       color: #ff4444;
+      font-weight: bold;
     }
 
     .nameNormal {
-      color: #c084ff;
+      color: #ffa7c4;
+      font-weight: bold;
     }
 
     .systemMsg {
-      background: #444;
+      background: rgba(255,255,255,0.2);
       padding: 6px 12px;
       border-radius: 6px;
       margin: auto;
-      opacity: 0.8;
+      opacity: 0.9;
+      border: 1px solid rgba(255,255,255,0.3);
     }
 
     /* Animación */
@@ -141,65 +203,52 @@
       100% { opacity: 1; transform: translateY(0); }
     }
 
-    /* INPUT */
+    /* ======== INPUT ======== */
     #input-container {
-      margin-top: 10px;
+      margin-top: 15px;
       display: flex;
     }
 
     #msgBox {
       flex: 1;
-      padding: 12px;
-      border-radius: 6px;
-      border: none;
-      font-size: 15px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 2px solid rgba(100,255,218,0.4);
+      background: rgba(0,0,0,0.35);
+      color: white;
+      font-size: 16px;
+      box-shadow: 0 0 10px rgba(100,255,218,0.2);
     }
 
     #sendBtn {
-      padding: 12px 18px;
-      margin-left: 5px;
-      border-radius: 6px;
-      border: none;
-      background: #7289da;
-      color: white;
+      padding: 14px 22px;
+      margin-left: 8px;
+      border-radius: 8px;
+      background: #64ffda;
+      color: #1a1a2e;
       cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 0 12px rgba(100,255,218,0.6);
+      transition: 0.2s ease;
     }
 
-    button#logoutBtn {
-      margin-top: 10px;
-      padding: 8px;
-      border: none;
-      border-radius: 5px;
-      background: #f04747;
-      color: white;
-      cursor: pointer;
+    #sendBtn:hover {
+      background: #92ffe6;
     }
-
-    #avatarInput {
-      margin-top: 10px;
-    }
-
-    #changeAvatarBtn {
-      margin-top: 5px;
-      padding: 5px;
-      border: none;
-      border-radius: 5px;
-      background: #4caf50;
-      color: white;
-      cursor: pointer;
-    }
-
   </style>
+
 </head>
 <body>
 
+<div id="mainWrapper">
+
   <div id="sidebar">
-    <h3>Usuarios conectados</h3>
+    <h3>Usuarios Conectados</h3>
+
     <div id="user-list"></div>
 
     <input type="file" id="avatarInput">
     <button id="changeAvatarBtn">Cambiar Avatar</button>
-
     <button id="logoutBtn">Logout</button>
   </div>
 
@@ -212,7 +261,10 @@
     </div>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js"></script>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="client.js"></script>
+
 </body>
 </html>
