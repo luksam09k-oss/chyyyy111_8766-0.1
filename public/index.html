@@ -5,38 +5,37 @@
   <title>0.0.0.0</title>
 
   <style>
-    /* ======== ESTILO MINIMALISTA / TERMINAL RAW ======== */
+    /* ======== ESTILO MINIMALISTA ABSOLUTO ======== */
     body {
       margin: 0;
-      background-color: #000; /* Negro absoluto */
-      color: #bbb; /* Gris apagado, menos rastro de luz */
-      font-family: "Lucida Console", Monaco, monospace;
-      font-size: 12px;
+      background-color: #050505;
+      color: #777;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 13px;
       height: 100vh;
-      display: flex;
+      overflow: hidden;
     }
 
-    /* Contenedor sin adornos */
     #mainWrapper {
-      width: 100%;
-      height: 100%;
       display: flex;
+      height: 100%;
     }
 
-    /* ======== NODOS (SIDEBAR) ======== */
+    /* ======== SIDEBAR SIN CARAS ======== */
     #sidebar {
-      width: 180px;
-      border-right: 1px solid #222;
-      padding: 10px;
+      width: 160px;
+      border-right: 1px solid #1a1a1a;
+      padding: 15px;
       display: flex;
       flex-direction: column;
+      background-color: #000;
     }
 
     #sidebar h3 {
-      font-size: 11px;
-      color: #444;
-      margin: 0 0 10px 0;
-      text-transform: uppercase;
+      font-size: 10px;
+      color: #333;
+      margin: 0 0 15px 0;
+      letter-spacing: 2px;
     }
 
     #user-list {
@@ -44,116 +43,130 @@
       overflow-y: auto;
     }
 
+    /* Los usuarios son solo nombres en una lista gris */
     .user-entry {
-      padding: 2px 0;
-      color: #666;
+      padding: 4px 0;
+      font-size: 12px;
+      border: none;
+      background: none;
     }
 
-    /* Indicador de usuario actual */
-    .meUser { color: #888; font-weight: bold; }
-    .meUser::before { content: "> "; }
+    /* Eliminar cualquier imagen residual por si el JS intenta inyectarla */
+    .user-entry img, .msgBubble img {
+      display: none !important;
+    }
 
-    /* Botones que parecen texto plano */
+    .meUser { color: #aaa; }
+    .meUser::before { content: "[x] "; }
+
     button {
       background: none;
-      border: 1px solid #333;
-      color: #666;
+      border: 1px solid #222;
+      color: #444;
       font-family: inherit;
       font-size: 10px;
-      padding: 3px;
-      margin-top: 5px;
-      cursor: pointer;
-      text-align: left;
+      padding: 5px;
+      margin-top: 8px;
+      cursor: crosshair;
+      text-transform: uppercase;
     }
 
     button:hover {
-      border-color: #555;
-      color: #aaa;
+      color: #888;
+      border-color: #444;
     }
 
-    /* ======== CANAL DE COMUNICACIÓN ======== */
+    /* ======== AREA DE CHAT (PURO TEXTO) ======== */
     #chat-container {
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 10px;
+      padding: 20px;
+      background-color: #050505;
     }
 
     #messages {
       flex: 1;
       overflow-y: auto;
-      padding-right: 10px;
+      padding-bottom: 20px;
     }
 
     .message {
-      margin-bottom: 4px;
-      line-height: 1.4;
+      margin-bottom: 6px;
+      display: block; /* Volvemos al flujo de texto normal */
     }
 
-    /* Formato de mensaje tipo log */
-    .msgBubble { display: inline; }
-    
-    .nameAdmin { color: #700; }
-    .nameNormal { color: #555; }
+    /* Formato tipo consola: [Usuario]: Mensaje */
+    .msgBubble {
+      display: inline;
+      background: none !important;
+      border: none !important;
+      padding: 0 !important;
+    }
 
-    /* Los mensajes propios se ven como entradas de sistema */
-    .message.me { color: #999; }
+    .nameAdmin { color: #500; font-weight: bold; }
+    .nameNormal { color: #444; }
+    
+    .message.me .nameNormal { color: #888; }
+    .message.me .msgBubble { color: #bbb; }
 
     .systemMsg {
-      color: #333;
-      font-style: italic;
-      margin: 5px 0;
+      color: #222;
+      font-size: 11px;
+      text-align: left;
+      margin: 10px 0;
+      border-bottom: 1px solid #111;
     }
 
-    /* ======== LÍNEA DE COMANDO (INPUT) ======== */
+    /* ======== INPUT TIPO TERMINAL ======== */
     #input-container {
-      border-top: 1px solid #222;
-      padding-top: 10px;
       display: flex;
+      align-items: center;
+      border-top: 1px solid #1a1a1a;
+      padding-top: 15px;
     }
 
     #input-container::before {
-      content: ">>";
-      padding-right: 10px;
-      color: #444;
+      content: "sh-3.2#";
+      color: #333;
+      margin-right: 10px;
     }
 
     #msgBox {
       flex: 1;
       background: none;
       border: none;
-      color: #999;
+      color: #aaa;
       font-family: inherit;
+      font-size: 13px;
       outline: none;
     }
 
-    #sendBtn { display: none; } /* En una terminal, usas Enter, no botones */
+    #sendBtn { display: none; }
 
-    /* Scrollbar invisible para mantener el anonimato visual */
-    ::-webkit-scrollbar { width: 3px; }
-    ::-webkit-scrollbar-track { background: #000; }
-    ::-webkit-scrollbar-thumb { background: #222; }
+    /* Scrollbars invisibles */
+    ::-webkit-scrollbar { width: 2px; }
+    ::-webkit-scrollbar-thumb { background: #111; }
   </style>
 </head>
 <body>
 
 <div id="mainWrapper">
   <div id="sidebar">
-    <h3>[NODES_ALIVE]</h3>
+    <h3>ACTIVE_NODES</h3>
     <div id="user-list"></div>
     
     <input type="file" id="avatarInput" style="display:none">
-    <button onclick="document.getElementById('avatarInput').click()">[SET_ID]</button>
-    <button id="logoutBtn">[DROP_CONN]</button>
+    <button id="logoutBtn">KILL_SESSION</button>
   </div>
 
   <div id="chat-container">
     <div id="messages">
-      <div class="systemMsg">LOG_START: SECURE_CHANNEL_INIT...</div>
+      <div class="systemMsg">BYZANTINE_FAULT_TOLERANCE_ENABLED...</div>
+      <div class="systemMsg">CONNECTED_TO_PRIVATE_RELAY_312</div>
     </div>
     <div id="input-container">
-      <input id="msgBox" placeholder="..." autocomplete="off" autofocus>
-      <button id="sendBtn">SEND</button>
+      <input id="msgBox" placeholder="type_here..." autocomplete="off" autofocus>
     </div>
   </div>
 </div>
