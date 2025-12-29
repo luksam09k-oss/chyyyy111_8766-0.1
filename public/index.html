@@ -2,265 +2,160 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Chatroom 2.0</title>
+  <title>0.0.0.0</title>
 
   <style>
-    /* ======== ESTILO GLOBAL ======== */
+    /* ======== ESTILO MINIMALISTA / TERMINAL RAW ======== */
     body {
       margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #000; /* Negro absoluto */
+      color: #bbb; /* Gris apagado, menos rastro de luz */
+      font-family: "Lucida Console", Monaco, monospace;
+      font-size: 12px;
       height: 100vh;
       display: flex;
-      color: #e9e9f3;
-
-      /* Mismo fondo del error.html */
-      background-image: url('63329cdef4d974c297bd5914efd1f940.gif');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      background-color: #1a1a2e;
     }
 
-    /* Contenedor principal para añadir blur */
+    /* Contenedor sin adornos */
     #mainWrapper {
       width: 100%;
       height: 100%;
       display: flex;
-      background-color: rgba(44, 44, 68, 0.80);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
     }
 
-    /* ======== SIDEBAR ======== */
+    /* ======== NODOS (SIDEBAR) ======== */
     #sidebar {
-      width: 240px;
-      background-color: rgba(30, 30, 50, 0.85);
-      border-right: 3px solid #64ffda;
-      box-shadow: 0 0 15px rgba(100,255,218,0.4);
-      padding: 15px;
+      width: 180px;
+      border-right: 1px solid #222;
+      padding: 10px;
       display: flex;
       flex-direction: column;
     }
 
     #sidebar h3 {
-      margin-top: 0;
-      font-size: 18px;
-      text-align: center;
-      color: #64ffda;
-      border-bottom: 2px solid #64ffda;
-      padding-bottom: 8px;
-      letter-spacing: 1px;
+      font-size: 11px;
+      color: #444;
+      margin: 0 0 10px 0;
+      text-transform: uppercase;
     }
 
     #user-list {
       flex: 1;
       overflow-y: auto;
-      margin-top: 10px;
     }
 
     .user-entry {
-      display: flex;
-      align-items: center;
-      padding: 6px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-      margin-bottom: 6px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: 0.25s ease;
+      padding: 2px 0;
+      color: #666;
     }
 
-    .user-entry:hover {
-      background: rgba(100,255,218,0.15);
-      transform: translateX(3px);
-    }
+    /* Indicador de usuario actual */
+    .meUser { color: #888; font-weight: bold; }
+    .meUser::before { content: "> "; }
 
-    .user-entry img {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      margin-right: 6px;
-      border: 2px solid #64ffda;
-    }
-
-    .meUser {
-      background: rgba(100,255,218,0.3) !important;
-    }
-
+    /* Botones que parecen texto plano */
     button {
-      border: none;
-      padding: 10px;
-      border-radius: 6px;
+      background: none;
+      border: 1px solid #333;
+      color: #666;
+      font-family: inherit;
+      font-size: 10px;
+      padding: 3px;
+      margin-top: 5px;
       cursor: pointer;
-      margin-top: 10px;
-      font-weight: bold;
-      transition: 0.25s ease;
+      text-align: left;
     }
 
-    #changeAvatarBtn {
-      background: #64ffda;
-      color: #1a1a2e;
-      box-shadow: 0 0 10px rgba(100,255,218,0.6);
+    button:hover {
+      border-color: #555;
+      color: #aaa;
     }
 
-    #changeAvatarBtn:hover {
-      background: #92ffe6;
-    }
-
-    #logoutBtn {
-      background: #f04747;
-      color: white;
-      box-shadow: 0 0 8px rgba(255,80,80,0.6);
-    }
-
-    #logoutBtn:hover {
-      background: #ff6b6b;
-    }
-
-    /* ======== CHAT ======== */
+    /* ======== CANAL DE COMUNICACIÓN ======== */
     #chat-container {
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 20px;
+      padding: 10px;
     }
 
     #messages {
       flex: 1;
       overflow-y: auto;
-      background: rgba(20, 20, 35, 0.65);
-      padding: 20px;
-      border-radius: 12px;
-      border: 2px solid rgba(100,255,218,0.4);
-      box-shadow: 0 0 15px rgba(100,255,218,0.3);
+      padding-right: 10px;
     }
 
     .message {
-      width: 100%;
-      display: flex;
-      margin-bottom: 10px;
-      animation: fadeIn 0.25s ease-out;
+      margin-bottom: 4px;
+      line-height: 1.4;
     }
 
-    .message.me {
-      justify-content: flex-end;
-    }
+    /* Formato de mensaje tipo log */
+    .msgBubble { display: inline; }
+    
+    .nameAdmin { color: #700; }
+    .nameNormal { color: #555; }
 
-    .message.other {
-      justify-content: flex-start;
-    }
-
-    .msgBubble {
-      background: rgba(60,60,90,0.85);
-      padding: 12px;
-      border-radius: 10px;
-      max-width: 70%;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 15px;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .message.me .msgBubble {
-      background: rgba(100,255,218,0.3);
-      border: 2px solid #64ffda;
-    }
-
-    .message.other .msgBubble {
-      background: rgba(255,255,255,0.07);
-    }
-
-    .msgBubble img {
-      width: 35px;
-      height: 35px;
-      border-radius: 50%;
-      border: 2px solid #64ffda;
-    }
-
-    .nameAdmin {
-      color: #ff4444;
-      font-weight: bold;
-    }
-
-    .nameNormal {
-      color: #ffa7c4;
-      font-weight: bold;
-    }
+    /* Los mensajes propios se ven como entradas de sistema */
+    .message.me { color: #999; }
 
     .systemMsg {
-      background: rgba(255,255,255,0.2);
-      padding: 6px 12px;
-      border-radius: 6px;
-      margin: auto;
-      opacity: 0.9;
-      border: 1px solid rgba(255,255,255,0.3);
+      color: #333;
+      font-style: italic;
+      margin: 5px 0;
     }
 
-    /* Animación */
-    @keyframes fadeIn {
-      0% { opacity: 0; transform: translateY(8px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ======== INPUT ======== */
+    /* ======== LÍNEA DE COMANDO (INPUT) ======== */
     #input-container {
-      margin-top: 15px;
+      border-top: 1px solid #222;
+      padding-top: 10px;
       display: flex;
+    }
+
+    #input-container::before {
+      content: ">>";
+      padding-right: 10px;
+      color: #444;
     }
 
     #msgBox {
       flex: 1;
-      padding: 14px;
-      border-radius: 8px;
-      border: 2px solid rgba(100,255,218,0.4);
-      background: rgba(0,0,0,0.35);
-      color: white;
-      font-size: 16px;
-      box-shadow: 0 0 10px rgba(100,255,218,0.2);
+      background: none;
+      border: none;
+      color: #999;
+      font-family: inherit;
+      outline: none;
     }
 
-    #sendBtn {
-      padding: 14px 22px;
-      margin-left: 8px;
-      border-radius: 8px;
-      background: #64ffda;
-      color: #1a1a2e;
-      cursor: pointer;
-      font-weight: bold;
-      box-shadow: 0 0 12px rgba(100,255,218,0.6);
-      transition: 0.2s ease;
-    }
+    #sendBtn { display: none; } /* En una terminal, usas Enter, no botones */
 
-    #sendBtn:hover {
-      background: #92ffe6;
-    }
+    /* Scrollbar invisible para mantener el anonimato visual */
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: #000; }
+    ::-webkit-scrollbar-thumb { background: #222; }
   </style>
-
 </head>
 <body>
 
 <div id="mainWrapper">
-
   <div id="sidebar">
-    <h3>Usuarios Conectados</h3>
-
+    <h3>[NODES_ALIVE]</h3>
     <div id="user-list"></div>
-
-    <input type="file" id="avatarInput">
-    <button id="changeAvatarBtn">Cambiar Avatar</button>
-    <button id="logoutBtn">Logout</button>
+    
+    <input type="file" id="avatarInput" style="display:none">
+    <button onclick="document.getElementById('avatarInput').click()">[SET_ID]</button>
+    <button id="logoutBtn">[DROP_CONN]</button>
   </div>
 
   <div id="chat-container">
-    <div id="messages"></div>
-
+    <div id="messages">
+      <div class="systemMsg">LOG_START: SECURE_CHANNEL_INIT...</div>
+    </div>
     <div id="input-container">
-      <input id="msgBox" placeholder="Escribe tu mensaje...">
-      <button id="sendBtn">Enviar</button>
+      <input id="msgBox" placeholder="..." autocomplete="off" autofocus>
+      <button id="sendBtn">SEND</button>
     </div>
   </div>
-
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
