@@ -2,161 +2,179 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>0.0.0.0</title>
-
+  <title>Chatroom :: Terminal</title>
   <style>
-    /* ======== ESTILO MINIMALISTA TOTAL ======== */
+
+    /* RESET BÁSICO */
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      background-color: #000;
-      color: #666; /* Gris muy oscuro para el rastro */
-      font-family: "Courier New", Courier, monospace;
-      font-size: 12px;
       height: 100vh;
-      overflow: hidden;
-    }
-
-    #mainWrapper {
       display: flex;
-      height: 100%;
+      font-family: "Courier New", monospace;
+      background: #000;
+      color: #cfcfcf;
     }
 
-    /* ======== SIDEBAR ======== */
+    /* SIDEBAR */
     #sidebar {
-      width: 150px;
-      border-right: 1px solid #111;
-      padding: 15px;
+      width: 220px;
+      background: #050505;
+      border-right: 1px solid #222;
+      padding: 10px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between; /* Empuja el logout al fondo */
     }
 
     #sidebar h3 {
-      font-size: 10px;
-      color: #222;
       margin: 0 0 10px 0;
-      letter-spacing: 1px;
+      font-size: 14px;
+      color: #00ff88;
+      border-bottom: 1px solid #222;
+      padding-bottom: 5px;
     }
 
     #user-list {
       flex: 1;
       overflow-y: auto;
+      font-size: 13px;
     }
 
     .user-entry {
-      padding: 3px 0;
-      color: #444;
+      padding: 4px 2px;
+      cursor: pointer;
+      white-space: nowrap;
     }
 
-    /* Eliminar cualquier rastro de imágenes por CSS */
-    img { display: none !important; }
-
-    .meUser { color: #888; }
-    .meUser::before { content: "[x] "; }
-
-    /* ======== BOTÓN LOGOUT (RESTABLECIDO) ======== */
-    #logoutBtn {
-      background: none;
-      border: 1px solid #300; /* Rojo muy oscuro, casi negro */
-      color: #500;
-      font-family: inherit;
-      font-size: 10px;
-      padding: 5px;
-      cursor: crosshair;
-      text-align: center;
-      width: 100%;
-      transition: all 0.2s;
+    .user-entry:hover {
+      background: #111;
     }
 
-    #logoutBtn:hover {
-      background: #200;
-      color: #a00;
-      border-color: #600;
+    .meUser {
+      color: #00ff88;
     }
 
-    /* ======== AREA DE CHAT ======== */
+    /* CHAT */
     #chat-container {
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 20px;
+      padding: 10px;
     }
 
     #messages {
       flex: 1;
       overflow-y: auto;
+      background: #000;
+      padding: 10px;
+      font-size: 14px;
+      line-height: 1.4;
     }
 
     .message {
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
-    .msgBubble {
-      color: #777;
+    .message.me {
+      color: #00ff88;
     }
-    
-    .nameAdmin { color: #800; font-weight: bold; }
-    .nameNormal { color: #555; }
+
+    .message.other {
+      color: #cfcfcf;
+    }
 
     .systemMsg {
-      color: #222;
-      font-size: 10px;
-      margin-bottom: 10px;
+      color: #888;
+      font-style: italic;
+      text-align: center;
+      margin: 8px 0;
     }
 
-    /* ======== INPUT ======== */
+    /* INPUT */
     #input-container {
-      border-top: 1px solid #111;
-      padding-top: 15px;
       display: flex;
-    }
-
-    #input-container::before {
-      content: "sh-3.2#";
-      color: #222;
-      margin-right: 10px;
+      border-top: 1px solid #222;
+      padding-top: 8px;
     }
 
     #msgBox {
       flex: 1;
-      background: none;
-      border: none;
-      color: #888;
+      background: #000;
+      border: 1px solid #222;
+      color: #cfcfcf;
+      padding: 6px;
       font-family: inherit;
-      outline: none;
+      font-size: 14px;
     }
 
-    #sendBtn { display: none; }
+    #msgBox:focus {
+      outline: none;
+      border-color: #00ff88;
+    }
 
-    /* Scrollbars minimalistas */
-    ::-webkit-scrollbar { width: 2px; }
-    ::-webkit-scrollbar-thumb { background: #111; }
+    #sendBtn {
+      margin-left: 6px;
+      padding: 6px 12px;
+      background: #000;
+      border: 1px solid #222;
+      color: #00ff88;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    #sendBtn:hover {
+      border-color: #00ff88;
+    }
+
+    /* BOTONES */
+    button {
+      background: #000;
+      border: 1px solid #222;
+      color: #cfcfcf;
+      font-family: inherit;
+      padding: 5px;
+      margin-top: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: #00ff88;
+      color: #00ff88;
+    }
+
+    input[type="file"] {
+      font-family: inherit;
+      font-size: 12px;
+      color: #888;
+      margin-top: 6px;
+    }
+
   </style>
 </head>
 <body>
 
-<div id="mainWrapper">
   <div id="sidebar">
-    <div>
-      <h3>ACTIVE_NODES</h3>
-      <div id="user-list"></div>
-    </div>
-    
-    <button id="logoutBtn">KILL_SESSION</button>
+    <h3>USUARIOS</h3>
+    <div id="user-list"></div>
+
+    <input type="file" id="avatarInput">
+    <button id="changeAvatarBtn">SET AVATAR</button>
+    <button id="logoutBtn">LOGOUT</button>
   </div>
 
   <div id="chat-container">
-    <div id="messages">
-      <div class="systemMsg">>> CHANNEL_ESTABLISHED...</div>
-    </div>
+    <div id="messages"></div>
+
     <div id="input-container">
-      <input id="msgBox" placeholder="..." autocomplete="off" autofocus>
+      <input id="msgBox" placeholder="> escribir mensaje">
+      <button id="sendBtn">SEND</button>
     </div>
   </div>
-</div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="client.js"></script>
-
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
 </body>
 </html>
