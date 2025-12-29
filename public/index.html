@@ -1,39 +1,33 @@
+
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Chatroom :: Terminal</title>
-
+  <title>Chatroom 2.0</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
     body {
       margin: 0;
+      font-family: Arial, sans-serif;
       height: 100vh;
       display: flex;
-      font-family: "Courier New", monospace;
-      background: #000;
-      color: #cfcfcf;
+      background: #2f3136;
+      color: white;
     }
 
-    /* ========== SIDEBAR ========== */
+    /* LADO USUARIOS */
     #sidebar {
       width: 220px;
-      background: #050505;
-      border-right: 1px solid #222;
+      background: #202225;
       padding: 10px;
       display: flex;
       flex-direction: column;
-      font-size: 13px;
     }
 
     #sidebar h3 {
-      margin: 0 0 10px 0;
-      font-size: 13px;
-      color: #00ff88;
-      border-bottom: 1px solid #222;
+      margin-top: 0;
+      font-size: 16px;
+      border-bottom: 1px solid #444;
       padding-bottom: 5px;
     }
 
@@ -43,35 +37,32 @@
     }
 
     .user-entry {
-      padding: 3px 2px;
-      white-space: nowrap;
-    }
-
-    .user-entry.admin {
-      color: #ff5555;
-    }
-
-    .user-entry.me {
-      color: #00ff88;
-    }
-
-    button, input[type="file"] {
-      margin-top: 6px;
-      background: #000;
-      border: 1px solid #222;
-      color: #cfcfcf;
-      font-family: inherit;
-      font-size: 12px;
-      padding: 4px;
-    }
-
-    button:hover {
-      border-color: #00ff88;
-      color: #00ff88;
+      display: flex;
+      align-items: center;
+      padding: 6px;
+      margin-bottom: 6px;
+      border-radius: 5px;
       cursor: pointer;
+      transition: 0.2s;
     }
 
-    /* ========== CHAT ========== */
+    .user-entry:hover {
+      background: #333;
+    }
+
+    .user-entry img {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    /* mi usuario */
+    .meUser {
+      background: #1f6f36 !important;
+    }
+
+    /* CHAT */
     #chat-container {
       flex: 1;
       display: flex;
@@ -82,91 +73,146 @@
     #messages {
       flex: 1;
       overflow-y: auto;
-      font-size: 14px;
-      line-height: 1.4;
-      white-space: pre-wrap;
+      background: #36393f;
+      padding: 15px;
+      border-radius: 6px;
     }
 
     .message {
-      margin-bottom: 4px;
+      width: 100%;
+      display: flex;
+      margin-bottom: 10px;
+      animation: fadeIn 0.25s ease-out;
     }
 
     .message.me {
-      color: #00ff88;
+      justify-content: flex-end;
     }
 
-    .message.admin {
-      color: #ff5555;
+    .message.other {
+      justify-content: flex-start;
     }
 
-    .message.system {
-      color: #888;
-      text-align: center;
-      font-style: italic;
-      margin: 6px 0;
-    }
-
-    /* FORMATO NOMBRE */
-    .username.admin::before {
-      content: "[x]";
-      margin-right: 4px;
-    }
-
-    .username {
-      margin-right: 6px;
-    }
-
-    /* ========== INPUT TERMINAL ========== */
-    #input-container {
+    .msgBubble {
+      background: #2f3136;
+      padding: 12px;
+      border-radius: 10px;
+      max-width: 65%;
       display: flex;
-      border-top: 1px solid #222;
-      padding-top: 8px;
       align-items: center;
+      gap: 8px;
+      font-size: 15px;
     }
 
-    #prompt {
-      margin-right: 6px;
-      color: #00ff88;
+    .message.me .msgBubble {
+      background: #4854e8;
+    }
+
+    .message.other .msgBubble {
+      background: #2c2f34;
+    }
+
+    .msgBubble img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+    }
+
+    /* colores de nombres */
+    .nameAdmin {
+      color: #ff4444;
+    }
+
+    .nameNormal {
+      color: #c084ff;
+    }
+
+    .systemMsg {
+      background: #444;
+      padding: 6px 12px;
+      border-radius: 6px;
+      margin: auto;
+      opacity: 0.8;
+    }
+
+    /* Animación */
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(8px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* INPUT */
+    #input-container {
+      margin-top: 10px;
+      display: flex;
     }
 
     #msgBox {
       flex: 1;
-      background: #000;
+      padding: 12px;
+      border-radius: 6px;
       border: none;
-      color: #cfcfcf;
-      font-family: inherit;
-      font-size: 14px;
+      font-size: 15px;
     }
 
-    #msgBox:focus {
-      outline: none;
+    #sendBtn {
+      padding: 12px 18px;
+      margin-left: 5px;
+      border-radius: 6px;
+      border: none;
+      background: #7289da;
+      color: white;
+      cursor: pointer;
+    }
+
+    button#logoutBtn {
+      margin-top: 10px;
+      padding: 8px;
+      border: none;
+      border-radius: 5px;
+      background: #f04747;
+      color: white;
+      cursor: pointer;
+    }
+
+    #avatarInput {
+      margin-top: 10px;
+    }
+
+    #changeAvatarBtn {
+      margin-top: 5px;
+      padding: 5px;
+      border: none;
+      border-radius: 5px;
+      background: #4caf50;
+      color: white;
+      cursor: pointer;
     }
 
   </style>
 </head>
-
 <body>
 
-  <!-- SIDEBAR -->
   <div id="sidebar">
-    <h3>USUARIOS</h3>
+    <h3>Usuarios conectados</h3>
     <div id="user-list"></div>
 
-    <button id="logoutBtn">LOGOUT</button>
+    <input type="file" id="avatarInput">
+    <button id="changeAvatarBtn">Cambiar Avatar</button>
+
+    <button id="logoutBtn">Logout</button>
   </div>
 
-  <!-- CHAT -->
   <div id="chat-container">
     <div id="messages"></div>
 
     <div id="input-container">
-      <span id="prompt">&gt;</span>
-      <input id="msgBox" autocomplete="off">
+      <input id="msgBox" placeholder="Escribe tu mensaje...">
+      <button id="sendBtn">Enviar</button>
     </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
-
 </body>
 </html>
