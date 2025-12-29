@@ -5,13 +5,13 @@
   <title>0.0.0.0</title>
 
   <style>
-    /* ======== ESTILO MINIMALISTA ABSOLUTO ======== */
+    /* ======== ESTILO MINIMALISTA TOTAL ======== */
     body {
       margin: 0;
-      background-color: #050505;
-      color: #777;
+      background-color: #000;
+      color: #666; /* Gris muy oscuro para el rastro */
       font-family: "Courier New", Courier, monospace;
-      font-size: 13px;
+      font-size: 12px;
       height: 100vh;
       overflow: hidden;
     }
@@ -21,21 +21,21 @@
       height: 100%;
     }
 
-    /* ======== SIDEBAR SIN CARAS ======== */
+    /* ======== SIDEBAR ======== */
     #sidebar {
-      width: 160px;
-      border-right: 1px solid #1a1a1a;
+      width: 150px;
+      border-right: 1px solid #111;
       padding: 15px;
       display: flex;
       flex-direction: column;
-      background-color: #000;
+      justify-content: space-between; /* Empuja el logout al fondo */
     }
 
     #sidebar h3 {
       font-size: 10px;
-      color: #333;
-      margin: 0 0 15px 0;
-      letter-spacing: 2px;
+      color: #222;
+      margin: 0 0 10px 0;
+      letter-spacing: 1px;
     }
 
     #user-list {
@@ -43,92 +43,77 @@
       overflow-y: auto;
     }
 
-    /* Los usuarios son solo nombres en una lista gris */
     .user-entry {
-      padding: 4px 0;
-      font-size: 12px;
-      border: none;
-      background: none;
+      padding: 3px 0;
+      color: #444;
     }
 
-    /* Eliminar cualquier imagen residual por si el JS intenta inyectarla */
-    .user-entry img, .msgBubble img {
-      display: none !important;
-    }
+    /* Eliminar cualquier rastro de imágenes por CSS */
+    img { display: none !important; }
 
-    .meUser { color: #aaa; }
+    .meUser { color: #888; }
     .meUser::before { content: "[x] "; }
 
-    button {
+    /* ======== BOTÓN LOGOUT (RESTABLECIDO) ======== */
+    #logoutBtn {
       background: none;
-      border: 1px solid #222;
-      color: #444;
+      border: 1px solid #300; /* Rojo muy oscuro, casi negro */
+      color: #500;
       font-family: inherit;
       font-size: 10px;
       padding: 5px;
-      margin-top: 8px;
       cursor: crosshair;
-      text-transform: uppercase;
+      text-align: center;
+      width: 100%;
+      transition: all 0.2s;
     }
 
-    button:hover {
-      color: #888;
-      border-color: #444;
+    #logoutBtn:hover {
+      background: #200;
+      color: #a00;
+      border-color: #600;
     }
 
-    /* ======== AREA DE CHAT (PURO TEXTO) ======== */
+    /* ======== AREA DE CHAT ======== */
     #chat-container {
       flex: 1;
       display: flex;
       flex-direction: column;
       padding: 20px;
-      background-color: #050505;
     }
 
     #messages {
       flex: 1;
       overflow-y: auto;
-      padding-bottom: 20px;
     }
 
     .message {
-      margin-bottom: 6px;
-      display: block; /* Volvemos al flujo de texto normal */
+      margin-bottom: 8px;
     }
 
-    /* Formato tipo consola: [Usuario]: Mensaje */
     .msgBubble {
-      display: inline;
-      background: none !important;
-      border: none !important;
-      padding: 0 !important;
+      color: #777;
     }
-
-    .nameAdmin { color: #500; font-weight: bold; }
-    .nameNormal { color: #444; }
     
-    .message.me .nameNormal { color: #888; }
-    .message.me .msgBubble { color: #bbb; }
+    .nameAdmin { color: #800; font-weight: bold; }
+    .nameNormal { color: #555; }
 
     .systemMsg {
       color: #222;
-      font-size: 11px;
-      text-align: left;
-      margin: 10px 0;
-      border-bottom: 1px solid #111;
+      font-size: 10px;
+      margin-bottom: 10px;
     }
 
-    /* ======== INPUT TIPO TERMINAL ======== */
+    /* ======== INPUT ======== */
     #input-container {
-      display: flex;
-      align-items: center;
-      border-top: 1px solid #1a1a1a;
+      border-top: 1px solid #111;
       padding-top: 15px;
+      display: flex;
     }
 
     #input-container::before {
       content: "sh-3.2#";
-      color: #333;
+      color: #222;
       margin-right: 10px;
     }
 
@@ -136,15 +121,14 @@
       flex: 1;
       background: none;
       border: none;
-      color: #aaa;
+      color: #888;
       font-family: inherit;
-      font-size: 13px;
       outline: none;
     }
 
     #sendBtn { display: none; }
 
-    /* Scrollbars invisibles */
+    /* Scrollbars minimalistas */
     ::-webkit-scrollbar { width: 2px; }
     ::-webkit-scrollbar-thumb { background: #111; }
   </style>
@@ -153,20 +137,20 @@
 
 <div id="mainWrapper">
   <div id="sidebar">
-    <h3>ACTIVE_NODES</h3>
-    <div id="user-list"></div>
+    <div>
+      <h3>ACTIVE_NODES</h3>
+      <div id="user-list"></div>
+    </div>
     
-    <input type="file" id="avatarInput" style="display:none">
     <button id="logoutBtn">KILL_SESSION</button>
   </div>
 
   <div id="chat-container">
     <div id="messages">
-      <div class="systemMsg">BYZANTINE_FAULT_TOLERANCE_ENABLED...</div>
-      <div class="systemMsg">CONNECTED_TO_PRIVATE_RELAY_312</div>
+      <div class="systemMsg">>> CHANNEL_ESTABLISHED...</div>
     </div>
     <div id="input-container">
-      <input id="msgBox" placeholder="type_here..." autocomplete="off" autofocus>
+      <input id="msgBox" placeholder="..." autocomplete="off" autofocus>
     </div>
   </div>
 </div>
