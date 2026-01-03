@@ -37,7 +37,7 @@
 
     #mainWrapper { width: 100%; height: 100%; display: flex; padding: 4px; box-sizing: border-box; gap: 4px; }
 
-    /* Bordes Retro */
+    /* Bordes Retro Estilo Windows */
     .retro-border {
       border: 2px solid;
       border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
@@ -47,25 +47,31 @@
     #user-list { flex: 1; overflow-y: auto; background: var(--inset-bg); border: 2px inset var(--border-dark); }
     
     .user-entry { display: flex; align-items: center; padding: 3px; font-size: 13px; }
-    .user-pfp-small, .msg-avatar { width: 16px; height: 16px; margin-right: 5px; border: 1px solid var(--border-dark); object-fit: cover; }
+    .user-pfp-small, .msg-avatar { 
+      width: 16px; height: 16px; margin-right: 5px; 
+      border: 1px solid var(--border-dark); object-fit: cover; 
+    }
 
     #chat-container { flex: 1; display: flex; flex-direction: column; padding: 5px; background: var(--panel-bg); gap: 5px; }
     #messages { flex: 1; overflow-y: auto; background: var(--inset-bg); padding: 8px; border: 2px inset var(--border-dark); }
 
-    .message { margin-bottom: 3px; line-height: 1.2; }
+    .message { margin-bottom: 3px; display: flex; align-items: flex-start; }
     .nameAdmin { color: var(--accent-red); font-weight: bold; }
     .nameNormal { color: var(--accent-blue); font-weight: bold; }
-    .systemMsg { color: #888; font-style: italic; font-size: 12px; }
+    .systemMsg { color: #888; font-style: italic; font-size: 12px; white-space: pre-wrap; }
 
     /* Controles */
     #input-container { display: flex; flex-direction: column; gap: 4px; }
-    #msgBox { width: 100%; background: var(--input-bg); color: var(--text-color); border: 2px inset var(--border-dark); padding: 4px; resize: none; font-family: inherit; }
+    #msgBox { 
+      width: 100%; background: var(--input-bg); color: var(--text-color); 
+      border: 2px inset var(--border-dark); padding: 4px; resize: none; font-family: inherit;
+    }
     .action-bar { display: flex; justify-content: space-between; }
     
     .retro-btn {
       background: var(--panel-bg); color: var(--text-color); font-family: inherit;
       border: 2px solid; border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
-      padding: 3px 10px; cursor: pointer; font-size: 12px;
+      padding: 3px 10px; cursor: pointer; font-size: 12px; font-weight: bold;
     }
     .retro-btn:active { border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark); }
 
@@ -76,9 +82,10 @@
 
 <div id="mainWrapper">
   <div id="sidebar" class="retro-border">
-    <div style="background: #444; color: white; padding: 2px 5px; font-size: 11px; margin-bottom: 4px;">Users in chat:</div>
+    <div style="background: #444; color: white; padding: 2px 5px; font-size: 11px; margin-bottom: 4px; border: 1px inset #222;">Users Online:</div>
     <div id="user-list"></div>
-    <div style="margin-top: 5px; display: flex; flex-direction: column; gap: 3px;">
+    
+    <div style="margin-top: 5px; border-top: 1px solid var(--border-dark); padding-top: 5px; display: flex; flex-direction: column; gap: 3px;">
       <input type="file" id="avatarInput" style="font-size: 9px; color: var(--text-color);">
       <button id="changeAvatarBtn" class="retro-btn">Update PFP</button>
       <button id="logoutBtn" class="retro-btn">Exit</button>
@@ -104,7 +111,7 @@
   const username = localStorage.getItem("username");
   const rol = localStorage.getItem("rol");
 
-  // --- GESTIÓN DE TEMA ---
+  // --- TEMA ---
   const themeBtn = document.getElementById("themeToggle");
   themeBtn.addEventListener("click", () => {
     document.body.classList.toggle("light-theme");
@@ -114,12 +121,12 @@
 
   // --- SOCKETS ---
   socket.emit("join-room", { room: "chat", username, rol }, (res) => {
-    if (!res.ok) { window.location.href = "/login.html"; return; }
+    if (!res.ok) { location.href = "/login.html"; return; }
     res.history.forEach(addMessage);
   });
 
   socket.on("new-message", addMessage);
-  socket.on("system-message", addMessage); // MUY IMPORTANTE PARA COMANDOS
+  socket.on("system-message", addMessage);
   socket.on("user-list", renderUserList);
   socket.on("clear-chat", () => document.getElementById("messages").innerHTML = "");
 
@@ -129,7 +136,9 @@
     users.forEach(u => {
       const div = document.createElement("div");
       div.className = "user-entry";
-      div.innerHTML = `<img src="/avatar/${u.avatarId || 'default.png'}" class="user-pfp-small">
+      // Añadimos un timestamp para evitar cache de imagen
+      const imgPath = `/avatar/${u.avatarId || 'default.png'}?t=${Date.now()}`;
+      div.innerHTML = `<img src="${imgPath}" class="user-pfp-small">
                        <span style="color:${u.rol==='admin'?'var(--accent-red)':'var(--accent-blue)'}">${u.username}</span>`;
       side.appendChild(div);
     });
@@ -141,14 +150,12 @@
     line.className = "message";
     const time = m.time ? new Date(m.time).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "";
 
-    // Si es un mensaje del sistema (comandos o avisos)
     if (!m.user || m.system) {
       line.innerHTML = `<div class="systemMsg">${m.text}</div>`;
       if (m.imageUrl) {
         line.innerHTML += `<img src="${m.imageUrl}" style="max-width:150px; border:1px solid #444; display:block; margin:4px 0;">`;
       }
     } else {
-      // Mensaje de usuario normal
       const nameClass = m.rol === "admin" ? "nameAdmin" : "nameNormal";
       line.innerHTML = `
         <img src="/avatar/${m.avatarId || 'default.png'}" class="msg-avatar">
@@ -162,17 +169,42 @@
     box.scrollTop = box.scrollHeight;
   }
 
+  // --- ENVIAR ---
   function sendMsg() {
     const box = document.getElementById("msgBox");
-    const val = box.value.trim();
-    if (!val) return;
-    socket.emit("send-message", val);
+    if (!box.value.trim()) return;
+    socket.emit("send-message", box.value.trim());
     box.value = "";
   }
 
   document.getElementById("sendBtn").addEventListener("click", sendMsg);
   document.getElementById("msgBox").addEventListener("keypress", e => {
     if(e.key === "Enter") { e.preventDefault(); sendMsg(); }
+  });
+
+  // --- ACTUALIZAR AVATAR ---
+  document.getElementById("changeAvatarBtn").addEventListener("click", async () => {
+    const fileInput = document.getElementById("avatarInput");
+    if (!fileInput.files.length) return alert("Select an image first");
+
+    const formData = new FormData();
+    formData.append("avatar", fileInput.files[0]);
+    formData.append("username", username);
+
+    try {
+      const res = await fetch("/upload-avatar", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.ok) {
+        alert("Avatar updated!");
+        fileInput.value = ""; // Limpiar input
+        // El servidor ya emite 'user-list' al actualizar, 
+        // por lo que renderUserList se ejecutará automáticamente.
+      } else {
+        alert("Error uploading image");
+      }
+    } catch (e) {
+      console.error(e);
+    }
   });
 
   document.getElementById("logoutBtn").addEventListener("click", () => {
