@@ -67,22 +67,25 @@
       border: 2px inset #000;
     }
 
-    .user-entry {
-      display: flex;
-      align-items: center;
-      padding: 4px;
-      border-bottom: 1px solid #333;
-    }
+.user-entry img {
+  width: 16px;   
+  height: 16px;
+  border-radius: 0; 
+  margin-right: 6px;
+  border: 1px solid #444;
+  object-fit: cover;
+  image-rendering: pixelated; 
 
-   
-    .user-entry img, .msg-avatar {
-      width: 18px;
-      height: 18px;
-      border-radius: 0;
-      margin-right: 8px;
-      border: 1px solid #555;
-      object-fit: cover;
-    }
+
+.msg-avatar {
+  width: 16px;   
+  height: 16px;
+  border-radius: 0;
+  margin-right: 5px;
+  border: 1px solid #444;
+  vertical-align: middle; 
+  object-fit: cover;
+}
 
   
     #chat-container {
