@@ -2,144 +2,198 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Login</title>
-
+  <title>Login - Retro Chat</title>
   <style>
+    /* ======== VARIABLES DE TEMA ======== */
+    :root {
+      --bg-main: #121212;
+      --panel-bg: #2d2d2d;
+      --text-color: #dfdfdf;
+      --border-light: #454545;
+      --border-dark: #000000;
+      --input-bg: #000;
+      --accent: #7aa2f7;
+    }
+
+    .light-theme {
+      --bg-main: #c0c0c0;
+      --panel-bg: #d4d0c8;
+      --text-color: #000000;
+      --border-light: #ffffff;
+      --border-dark: #808080;
+      --input-bg: #fff;
+      --accent: #000080;
+    }
 
     body {
       margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-
+      font-family: "Courier New", Courier, monospace;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-
-      color: #e9e9f3;
-
-     
-      background-image: url('63329cdef4d974c297bd5914efd1f940.gif');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      background-color: #1a1a2e;
+      background-color: var(--bg-main);
+      color: var(--text-color);
+      transition: background 0.2s;
     }
 
+    /* Caja Estilo Ventana Antigua */
     .box {
-      width: 330px;
-      padding: 35px;
+      width: 320px;
+      padding: 4px;
+      background-color: var(--panel-bg);
+      border: 2px solid;
+      border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+      box-shadow: 4px 4px 10px rgba(0,0,0,0.5);
+    }
 
-      background-color: rgba(44, 44, 68, 0.88);
-      border-radius: 14px;
+    .window-header {
+      background: var(--accent);
+      color: white;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
 
-      border: 3px solid #64ffda;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.7), 
-                  0 0 12px rgba(100,255,218,0.6);
-
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-
+    .window-content {
+      padding: 15px;
       text-align: center;
     }
 
     h2 {
+      font-size: 16px;
       margin-top: 0;
-      margin-bottom: 20px;
-      color: #64ffda;
-      letter-spacing: 1px;
+      margin-bottom: 15px;
+      text-transform: uppercase;
     }
 
-    /* === INPUTS === */
+    /* === INPUTS RETRO === */
     input {
       width: 100%;
-      padding: 12px;
-
-      border-radius: 7px;
-      border: 2px solid rgba(100,255,218,0.35);
-
-      margin: 10px 0;
-      background: rgba(0,0,0,0.35);
-      color: white;
-
-      font-size: 15px;
-      box-shadow: 0 0 10px rgba(100,255,218,0.2);
+      padding: 6px;
+      margin: 8px 0;
+      box-sizing: border-box;
+      background: var(--input-bg);
+      color: var(--text-color);
+      border: 2px inset var(--border-dark);
+      font-family: inherit;
+      outline: none;
     }
 
     input:focus {
-      outline: none;
-      border-color: #64ffda;
-      background: rgba(0,0,0,0.5);
-      box-shadow: 0 0 12px rgba(100,255,218,0.5);
+      border-color: var(--accent);
     }
 
-    /* === BOTÓN === */
+    /* === BOTONES RETRO === */
     button {
       width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-
-      background: #64ffda;
-      color: #1a1a2e;
-      border: none;
-      border-radius: 7px;
-
-      cursor: pointer;
+      padding: 8px;
+      margin-top: 15px;
+      background: var(--panel-bg);
+      color: var(--text-color);
+      font-family: inherit;
       font-weight: bold;
-      font-size: 16px;
-
-      box-shadow: 0 0 14px rgba(100,255,218,0.7);
-      transition: 0.2s ease;
+      cursor: pointer;
+      border: 2px solid;
+      border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
     }
 
-    button:hover {
-      background: #92ffe6;
-      transform: translateY(-2px);
+    button:active {
+      border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+      padding: 9px 7px 7px 9px; /* Efecto de hundimiento */
     }
 
     #msg {
       margin-top: 12px;
-      color: #ffa7c4;
-      font-weight: bold;
+      color: #ff5555;
+      font-size: 12px;
+      min-height: 14px;
     }
 
+    /* Decoración de la ventana */
+    .close-btn {
+      width: 14px;
+      height: 14px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border-dark);
+      color: black;
+      font-size: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
 <div class="box">
-  <h2>Iniciar Sesión</h2>
+  <div class="window-header">
+    <span>System Login</span>
+    <div class="close-btn">X</div>
+  </div>
 
-  <input id="user" placeholder="Usuario">
-  <input id="pass" placeholder="Contraseña" type="password">
+  <div class="window-content">
+    <h2>Access Denied</h2>
+    <p style="font-size: 11px; margin-bottom: 20px;">Please enter credentials to continue</p>
 
-  <button onclick="login()">Entrar</button>
+    <input id="user" placeholder="USER_ID">
+    <input id="pass" placeholder="PASSWORD" type="password">
 
-  <p id="msg"></p>
+    <button onclick="login()">[ EXECUTE ]</button>
+
+    <p id="msg"></p>
+  </div>
 </div>
 
 <script>
-async function login() {
-  const user = document.getElementById("user").value.trim();
-  const pass = document.getElementById("pass").value.trim();
-
-  const res = await fetch("/login", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({user, pass})
-  });
-
-  const data = await res.json();
-
-  if (!data.ok) {
-    document.getElementById("msg").innerText = "Credenciales incorrectas";
-    return;
+  // Detectar tema antes de cargar
+  if(localStorage.getItem("theme") === "light") {
+    document.body.classList.add("light-theme");
   }
 
-  localStorage.setItem("username", data.user);
-  localStorage.setItem("rol", data.rol);
+  async function login() {
+    const user = document.getElementById("user").value.trim();
+    const pass = document.getElementById("pass").value.trim();
+    const msgEl = document.getElementById("msg");
 
-  location.href = "/";
-}
+    if(!user || !pass) {
+        msgEl.innerText = "Error: Fields required";
+        return;
+    }
+
+    try {
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({user, pass})
+      });
+
+      const data = await res.json();
+
+      if (!data.ok) {
+        msgEl.innerText = data.reason === "banned" ? "ACCOUNT BANNED" : "INVALID CREDENTIALS";
+        return;
+      }
+
+      // Guardar sesión
+      localStorage.setItem("username", data.user);
+      localStorage.setItem("rol", data.rol);
+      
+      // Redirigir al chat
+      location.href = "/";
+    } catch (e) {
+      msgEl.innerText = "Server Error";
+    }
+  }
+
+  // Permitir entrar con la tecla Enter
+  document.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') login();
+  });
 </script>
 
 </body>
