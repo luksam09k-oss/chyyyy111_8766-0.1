@@ -134,7 +134,6 @@ io.on("connection", (socket) => {
   });
 
   // JOIN ROOM
-  // aceptamos room, username, rol (rol lo ignora el servidor y usa la BD)
   socket.on("join-room", async ({ room, username, rol }, cb = () => {}) => {
     try {
       if (!username) return cb({ ok: false });
@@ -149,10 +148,8 @@ io.on("connection", (socket) => {
 
       online[username] = { username, rol: user.rol, avatarId: socket.avatarId };
 
-      // **Aquí cargamos el historial desde MongoDB y lo enviamos en el callback**
       const history = await Message.find({ room }).sort({ time: 1 }).limit(100).lean();
 
-      // Sanitizar/normalizar valores del historial para evitar problemas en cliente
       const safeHistory = history.map(h => {
         return {
           _id: h._id,
@@ -167,7 +164,6 @@ io.on("connection", (socket) => {
       });
 
       cb({ ok: true, history: safeHistory });
-      // avisar a todos (o podrías hacer io.to(room).emit si quieres sólo la sala)
       io.emit("user-list", Object.values(online));
     } catch (err) {
       console.error("join-room error:", err);
@@ -211,7 +207,7 @@ io.on("connection", (socket) => {
           case "/admin":
             {
               const subcmd = target;
-              const arg = rest.join(" "); // reconstruye todo como filename o parámetros
+              const arg = rest.join(" ");
 
               switch(subcmd) {
                 case "list-images":
@@ -247,13 +243,13 @@ io.on("connection", (socket) => {
 
                 case "list-messages":
                   {
-                    // mostramos últimos 50 mensajes (más reciente primero)
+            
                     const messages = await Message.find({}).sort({ time: -1 }).limit(50).lean();
                     if (!messages.length) {
                       socket.emit("system-message", { text: "No hay mensajes" });
                     } else {
                       messages.forEach(m => {
-                        // formatear time si existe
+                       
                         let timeStr = "";
                         if (m.time && m.time.toISOString) timeStr = m.time.toISOString();
                         else if (m.time) timeStr = new Date(m.time).toISOString();
@@ -323,7 +319,6 @@ io.on("connection", (socket) => {
       }
 
       // MENSAJE NORMAL
-      // Guardamos siempre 'time' para que el cliente pueda ordenarlo
       const now = Date.now();
       const m = new Message({
         room: "chat",
@@ -336,7 +331,6 @@ io.on("connection", (socket) => {
       });
       await m.save();
 
-      // Emitimos el mensaje con time garantizado
       io.to("chat").emit("new-message", {
         _id: m._id,
         room: "chat",
@@ -360,7 +354,7 @@ io.on("connection", (socket) => {
     try {
       const msg = await Message.findById(msgId);
       if (!msg) return;
-      // permitir borrar si es autor o admin
+
       if (msg.user !== socket.username && socket.rol !== "admin") return;
 
       msg.deleted = true;
