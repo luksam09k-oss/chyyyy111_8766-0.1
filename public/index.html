@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Retro Chatroom</title>
+  <title>Retro Chatroom 2.0</title>
   <style>
     /* ======== VARIABLES Y TEMAS ======== */
     :root {
@@ -17,7 +17,6 @@
       --input-bg: #000;
     }
 
-    /* Clase para el modo claro */
     .light-theme {
       --bg-main: #c0c0c0;
       --panel-bg: #d4d0c8;
@@ -31,86 +30,69 @@
     }
 
     body {
-      margin: 0;
-      font-family: "Courier New", Courier, monospace;
-      height: 100vh;
-      background-color: var(--bg-main);
-      color: var(--text-color);
-      font-size: 14px;
-      transition: background 0.2s;
+      margin: 0; font-family: "Courier New", Courier, monospace;
+      height: 100vh; background-color: var(--bg-main); color: var(--text-color);
+      font-size: 14px; overflow: hidden;
     }
 
-    #mainWrapper {
-      width: 100%; height: 100%;
-      display: flex; padding: 4px; box-sizing: border-box; gap: 4px;
-    }
+    #mainWrapper { width: 100%; height: 100%; display: flex; padding: 4px; box-sizing: border-box; gap: 4px; }
 
-    /* Estilo Paneles Retro */
-    #sidebar, #chat-container, #messages, #msgBox, .retro-btn {
+    /* Bordes Retro */
+    .retro-border {
       border: 2px solid;
       border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
-      background-color: var(--panel-bg);
     }
 
-    #sidebar { width: 220px; display: flex; flex-direction: column; padding: 5px; }
+    #sidebar { width: 220px; display: flex; flex-direction: column; padding: 5px; background: var(--panel-bg); }
     #user-list { flex: 1; overflow-y: auto; background: var(--inset-bg); border: 2px inset var(--border-dark); }
     
-    .user-entry { display: flex; align-items: center; padding: 4px; border-bottom: 1px solid rgba(128,128,128,0.2); }
-    .user-pfp-small, .msg-avatar { 
-      width: 16px; height: 16px; margin-right: 6px; 
-      border: 1px solid var(--border-dark); object-fit: cover; 
-    }
+    .user-entry { display: flex; align-items: center; padding: 3px; font-size: 13px; }
+    .user-pfp-small, .msg-avatar { width: 16px; height: 16px; margin-right: 5px; border: 1px solid var(--border-dark); object-fit: cover; }
 
-    #chat-container { flex: 1; display: flex; flex-direction: column; padding: 5px; gap: 5px; }
-    #messages { flex: 1; overflow-y: auto; background: var(--inset-bg); padding: 10px; border: 2px inset var(--border-dark); }
+    #chat-container { flex: 1; display: flex; flex-direction: column; padding: 5px; background: var(--panel-bg); gap: 5px; }
+    #messages { flex: 1; overflow-y: auto; background: var(--inset-bg); padding: 8px; border: 2px inset var(--border-dark); }
 
-    /* Mensajes */
-    .message { margin-bottom: 4px; }
+    .message { margin-bottom: 3px; line-height: 1.2; }
     .nameAdmin { color: var(--accent-red); font-weight: bold; }
     .nameNormal { color: var(--accent-blue); font-weight: bold; }
-    .msgText { margin-left: 4px; }
-    .systemMsg { font-style: italic; opacity: 0.7; font-size: 12px; margin: 5px 0; }
+    .systemMsg { color: #888; font-style: italic; font-size: 12px; }
 
-    /* Inputs y Botones */
-    #input-container { display: flex; flex-direction: column; gap: 4px; position: relative; }
-    #msgBox { 
-      width: 100%; background: var(--input-bg); color: var(--text-color); 
-      padding: 5px; box-sizing: border-box; resize: none;
-    }
-
-    .action-bar { display: flex; justify-content: space-between; align-items: center; }
-    .retro-btn { 
-      padding: 4px 12px; cursor: pointer; color: var(--text-color); font-family: inherit; font-weight: bold;
+    /* Controles */
+    #input-container { display: flex; flex-direction: column; gap: 4px; }
+    #msgBox { width: 100%; background: var(--input-bg); color: var(--text-color); border: 2px inset var(--border-dark); padding: 4px; resize: none; font-family: inherit; }
+    .action-bar { display: flex; justify-content: space-between; }
+    
+    .retro-btn {
+      background: var(--panel-bg); color: var(--text-color); font-family: inherit;
+      border: 2px solid; border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+      padding: 3px 10px; cursor: pointer; font-size: 12px;
     }
     .retro-btn:active { border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark); }
 
-    #themeToggle { font-size: 18px; padding: 2px 8px; }
-
     .hidden { display: none; }
-    .menu { position: absolute; background: var(--panel-bg); border: 1px solid var(--border-dark); z-index: 10; }
   </style>
 </head>
 <body>
 
 <div id="mainWrapper">
-  <div id="sidebar">
-    <h3 style="font-size:12px; margin:0 0 5px 0;">Users:</h3>
+  <div id="sidebar" class="retro-border">
+    <div style="background: #444; color: white; padding: 2px 5px; font-size: 11px; margin-bottom: 4px;">Users in chat:</div>
     <div id="user-list"></div>
-    <div style="margin-top:10px; display:flex; flex-direction:column; gap:2px;">
-      <input type="file" id="avatarInput" style="font-size:10px; width:100%;">
+    <div style="margin-top: 5px; display: flex; flex-direction: column; gap: 3px;">
+      <input type="file" id="avatarInput" style="font-size: 9px; color: var(--text-color);">
       <button id="changeAvatarBtn" class="retro-btn">Update PFP</button>
       <button id="logoutBtn" class="retro-btn">Exit</button>
     </div>
   </div>
 
-  <div id="chat-container">
+  <div id="chat-container" class="retro-border">
     <div id="messages"></div>
     <div id="input-container">
-      <label style="font-size: 11px;">Message to send:</label>
+      <div style="font-size: 11px;">Message to send:</div>
       <textarea id="msgBox" rows="2"></textarea>
       <div class="action-bar">
         <button id="sendBtn" class="retro-btn">Send Message</button>
-        <button id="themeToggle" class="retro-btn" title="Toggle Dark/Light Mode">🌓</button>
+        <button id="themeToggle" class="retro-btn">🌓 Theme</button>
       </div>
     </div>
   </div>
@@ -118,81 +100,85 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-// --- LÓGICA DE CLIENTE ---
-const socket = io();
-const username = localStorage.getItem("username");
-const rol = localStorage.getItem("rol");
-let replyingTo = null;
+  const socket = io();
+  const username = localStorage.getItem("username");
+  const rol = localStorage.getItem("rol");
 
-// TEMA DARK/LIGHT
-const themeBtn = document.getElementById("themeToggle");
-themeBtn.addEventListener("click", () => {
+  // --- GESTIÓN DE TEMA ---
+  const themeBtn = document.getElementById("themeToggle");
+  themeBtn.addEventListener("click", () => {
     document.body.classList.toggle("light-theme");
-    const isLight = document.body.classList.contains("light-theme");
-    localStorage.setItem("theme", isLight ? "light" : "dark");
-});
-
-// Cargar preferencia
-if(localStorage.getItem("theme") === "light") document.body.classList.add("light-theme");
-
-// SOCKETS Y RENDER
-socket.emit("join-room", { room: "chat", username, rol }, (res) => {
-  if (!res.ok) return;
-  res.history.forEach(addMessage);
-});
-
-socket.on("new-message", addMessage);
-socket.on("user-list", renderUserList);
-
-function renderUserList(users) {
-  const side = document.getElementById("user-list");
-  side.innerHTML = "";
-  users.forEach(u => {
-    const div = document.createElement("div");
-    div.className = "user-entry";
-    div.innerHTML = `<img src="/avatar/${u.avatarId || "default.png"}" class="user-pfp-small">
-                     <span style="color:${u.rol==="admin"?"var(--accent-red)":"var(--accent-blue)"}">${u.username}</span>`;
-    side.appendChild(div);
+    localStorage.setItem("theme", document.body.classList.contains("light-theme") ? "light" : "dark");
   });
-}
+  if(localStorage.getItem("theme") === "light") document.body.classList.add("light-theme");
 
-function addMessage(m) {
-  const box = document.getElementById("messages");
-  const line = document.createElement("div");
-  line.className = "message";
-  const time = m.time ? new Date(m.time).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "";
+  // --- SOCKETS ---
+  socket.emit("join-room", { room: "chat", username, rol }, (res) => {
+    if (!res.ok) { window.location.href = "/login.html"; return; }
+    res.history.forEach(addMessage);
+  });
 
-  if (!m.user) {
-    line.innerHTML = `<div class="systemMsg">${m.text}</div>`;
-  } else {
-    const nameColor = m.rol==="admin"?"nameAdmin":"nameNormal";
-    line.innerHTML = `
-      <div class="message-content">
-        <img src="/avatar/${m.avatarId||"default.png"}" class="msg-avatar">
-        <b class="${nameColor}">${m.user}:</b>
-        <span class="msgText">${m.text}</span>
-        <span style="font-size:9px; opacity:0.5; margin-left:10px;">${time}</span>
-      </div>`;
+  socket.on("new-message", addMessage);
+  socket.on("system-message", addMessage); // MUY IMPORTANTE PARA COMANDOS
+  socket.on("user-list", renderUserList);
+  socket.on("clear-chat", () => document.getElementById("messages").innerHTML = "");
+
+  function renderUserList(users) {
+    const side = document.getElementById("user-list");
+    side.innerHTML = "";
+    users.forEach(u => {
+      const div = document.createElement("div");
+      div.className = "user-entry";
+      div.innerHTML = `<img src="/avatar/${u.avatarId || 'default.png'}" class="user-pfp-small">
+                       <span style="color:${u.rol==='admin'?'var(--accent-red)':'var(--accent-blue)'}">${u.username}</span>`;
+      side.appendChild(div);
+    });
   }
-  box.appendChild(line);
-  box.scrollTop = box.scrollHeight;
-}
 
-function sendMsg() {
-  const box = document.getElementById("msgBox");
-  if (!box.value.trim()) return;
-  socket.emit("send-message", box.value.trim());
-  box.value = "";
-}
+  function addMessage(m) {
+    const box = document.getElementById("messages");
+    const line = document.createElement("div");
+    line.className = "message";
+    const time = m.time ? new Date(m.time).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }) : "";
 
-document.getElementById("sendBtn").addEventListener("click", sendMsg);
-document.getElementById("msgBox").addEventListener("keypress", e => { if(e.key === "Enter") { e.preventDefault(); sendMsg(); }});
+    // Si es un mensaje del sistema (comandos o avisos)
+    if (!m.user || m.system) {
+      line.innerHTML = `<div class="systemMsg">${m.text}</div>`;
+      if (m.imageUrl) {
+        line.innerHTML += `<img src="${m.imageUrl}" style="max-width:150px; border:1px solid #444; display:block; margin:4px 0;">`;
+      }
+    } else {
+      // Mensaje de usuario normal
+      const nameClass = m.rol === "admin" ? "nameAdmin" : "nameNormal";
+      line.innerHTML = `
+        <img src="/avatar/${m.avatarId || 'default.png'}" class="msg-avatar">
+        <b class="${nameClass}">${m.user}:</b>
+        <span class="msgText">${m.text}</span>
+        <span style="font-size:9px; opacity:0.4; margin-left:8px;">${time}</span>
+      `;
+    }
 
-// LOGOUT
-document.getElementById("logoutBtn").addEventListener("click", () => {
-  localStorage.clear();
-  location.href = "/login.html";
-});
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function sendMsg() {
+    const box = document.getElementById("msgBox");
+    const val = box.value.trim();
+    if (!val) return;
+    socket.emit("send-message", val);
+    box.value = "";
+  }
+
+  document.getElementById("sendBtn").addEventListener("click", sendMsg);
+  document.getElementById("msgBox").addEventListener("keypress", e => {
+    if(e.key === "Enter") { e.preventDefault(); sendMsg(); }
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.clear();
+    location.href = "/login.html";
+  });
 </script>
 </body>
 </html>
