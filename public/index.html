@@ -2,238 +2,175 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Chatroom 2.0</title>
+  <title>Chatroom Retro Dark</title>
 
   <style>
-    /* ======== ESTILO GLOBAL ======== */
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      height: 100vh;
-      display: flex;
-      color: #e9e9f3;
-
    
-      background-image: url('63329cdef4d974c297bd5914efd1f940.gif');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      background-color: #1a1a2e;
+    :root {
+      --bg-color: #1a1a1a;
+      --panel-color: #2d2d2d;
+      --border-light: #454545;
+      --border-dark: #000000;
+      --text-main: #dfdfdf;
+      --accent-blue: #7aa2f7;
+      --accent-red: #f7768e;
     }
 
+    body {
+      margin: 0;
+      font-family: "Courier New", Courier, monospace; 
+      height: 100vh;
+      display: flex;
+      background-color: #121212;
+      color: var(--text-main);
+      font-size: 14px;
+    }
 
     #mainWrapper {
       width: 100%;
       height: 100%;
       display: flex;
-      background-color: rgba(44, 44, 68, 0.80);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      padding: 4px;
+      box-sizing: border-box;
+      gap: 4px;
+    }
+
+   
+    #sidebar, #chat-container, #messages, #msgBox {
+      border: 2px solid;
+      border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
+      background-color: var(--panel-color);
     }
 
   
     #sidebar {
-      width: 240px;
-      background-color: rgba(30, 30, 50, 0.85);
-      border-right: 3px solid #64ffda;
-      box-shadow: 0 0 15px rgba(100,255,218,0.4);
-      padding: 15px;
+      width: 220px;
       display: flex;
       flex-direction: column;
+      padding: 5px;
     }
 
     #sidebar h3 {
-      margin-top: 0;
-      font-size: 18px;
-      text-align: center;
-      color: #64ffda;
-      border-bottom: 2px solid #64ffda;
-      padding-bottom: 8px;
-      letter-spacing: 1px;
+      font-size: 14px;
+      margin: 0 0 5px 0;
+      padding: 3px;
+      background: #444;
+      color: white;
+      text-align: left;
+      border: 1px inset #555;
     }
 
     #user-list {
       flex: 1;
-      overflow-y: auto;
-      margin-top: 10px;
+      overflow-y: scroll;
+      background: #1e1e1e;
+      border: 2px inset #000;
     }
 
     .user-entry {
       display: flex;
       align-items: center;
-      padding: 6px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-      margin-bottom: 6px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: 0.25s ease;
+      padding: 4px;
+      border-bottom: 1px solid #333;
     }
 
-    .user-entry:hover {
-      background: rgba(100,255,218,0.15);
-      transform: translateX(3px);
+   
+    .user-entry img, .msg-avatar {
+      width: 18px;
+      height: 18px;
+      border-radius: 0;
+      margin-right: 8px;
+      border: 1px solid #555;
+      object-fit: cover;
     }
 
-    .user-entry img {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      margin-right: 6px;
-      border: 2px solid #64ffda;
-    }
-
-    .meUser {
-      background: rgba(100,255,218,0.3) !important;
-    }
-
-    button {
-      border: none;
-      padding: 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-top: 10px;
-      font-weight: bold;
-      transition: 0.25s ease;
-    }
-
-    #changeAvatarBtn {
-      background: #64ffda;
-      color: #1a1a2e;
-      box-shadow: 0 0 10px rgba(100,255,218,0.6);
-    }
-
-    #changeAvatarBtn:hover {
-      background: #92ffe6;
-    }
-
-    #logoutBtn {
-      background: #f04747;
-      color: white;
-      box-shadow: 0 0 8px rgba(255,80,80,0.6);
-    }
-
-    #logoutBtn:hover {
-      background: #ff6b6b;
-    }
-
-    /* ======== CHAT ======== */
+  
     #chat-container {
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 20px;
+      padding: 5px;
+      gap: 5px;
     }
 
     #messages {
       flex: 1;
-      overflow-y: auto;
-      background: rgba(20, 20, 35, 0.65);
-      padding: 20px;
-      border-radius: 12px;
-      border: 2px solid rgba(100,255,218,0.4);
-      box-shadow: 0 0 15px rgba(100,255,218,0.3);
+      overflow-y: scroll;
+      background: #1e1e1e;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
     }
 
     .message {
-      width: 100%;
+      margin-bottom: 4px;
+      line-height: 1.4;
       display: flex;
-      margin-bottom: 10px;
-      animation: fadeIn 0.25s ease-out;
+      align-items: flex-start;
     }
 
-    .message.me {
-      justify-content: flex-end;
-    }
-
-    .message.other {
-      justify-content: flex-start;
-    }
-
-    .msgBubble {
-      background: rgba(60,60,90,0.85);
-      padding: 12px;
-      border-radius: 10px;
-      max-width: 70%;
+    .message-content {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 15px;
-      border: 1px solid rgba(255,255,255,0.1);
     }
 
-    .message.me .msgBubble {
-      background: rgba(100,255,218,0.3);
-      border: 2px solid #64ffda;
+    .nameAdmin { color: var(--accent-red); font-weight: bold; }
+    .nameNormal { color: var(--accent-blue); font-weight: bold; }
+
+  
+    .msgText {
+      margin-left: 5px;
+      color: var(--text-main);
     }
 
-    .message.other .msgBubble {
-      background: rgba(255,255,255,0.07);
-    }
-
-    .msgBubble img {
-      width: 35px;
-      height: 35px;
-      border-radius: 50%;
-      border: 2px solid #64ffda;
-    }
-
-    .nameAdmin {
-      color: #ff4444;
-      font-weight: bold;
-    }
-
-    .nameNormal {
-      color: #ffa7c4;
-      font-weight: bold;
-    }
-
-    .systemMsg {
-      background: rgba(255,255,255,0.2);
-      padding: 6px 12px;
-      border-radius: 6px;
-      margin: auto;
-      opacity: 0.9;
-      border: 1px solid rgba(255,255,255,0.3);
-    }
-
-    
-    @keyframes fadeIn {
-      0% { opacity: 0; transform: translateY(8px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ======== INPUT ======== */
+   
     #input-container {
-      margin-top: 15px;
       display: flex;
+      flex-direction: column;
+      gap: 5px;
     }
 
     #msgBox {
-      flex: 1;
-      padding: 14px;
-      border-radius: 8px;
-      border: 2px solid rgba(100,255,218,0.4);
-      background: rgba(0,0,0,0.35);
-      color: white;
-      font-size: 16px;
-      box-shadow: 0 0 10px rgba(100,255,218,0.2);
+      width: 100%;
+      padding: 5px;
+      background: #000;
+      color: #00ff00; 
+      box-sizing: border-box;
+      outline: none;
+    }
+
+    button {
+      background: var(--panel-color);
+      color: var(--text-main);
+      border: 2px solid;
+      border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
+      cursor: pointer;
+      padding: 4px 10px;
+      font-family: inherit;
+    }
+
+    button:active {
+      border-color: var(--border-dark) var(--border-light) var(--border-light) var(--border-dark);
     }
 
     #sendBtn {
-      padding: 14px 22px;
-      margin-left: 8px;
-      border-radius: 8px;
-      background: #64ffda;
-      color: #1a1a2e;
-      cursor: pointer;
-      font-weight: bold;
-      box-shadow: 0 0 12px rgba(100,255,218,0.6);
-      transition: 0.2s ease;
+      width: fit-content;
+      align-self: flex-start;
+      margin-top: 5px;
     }
 
-    #sendBtn:hover {
-      background: #92ffe6;
+ 
+    #avatarInput { font-size: 10px; margin-top: 10px; }
+
+
+    ::-webkit-scrollbar {
+      width: 16px;
+      background: #333;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--panel-color);
+      border: 2px solid;
+      border-color: var(--border-light) var(--border-dark) var(--border-dark) var(--border-light);
     }
   </style>
 
@@ -243,21 +180,34 @@
 <div id="mainWrapper">
 
   <div id="sidebar">
-    <h3>Usuarios Conectados</h3>
-
-    <div id="user-list"></div>
+    <h3>Users in this chat:</h3>
+    <div id="user-list">
+        <div class="user-entry">
+            <img src="https://via.placeholder.com/20" alt="pfp">
+            <span>Daniel Fisher</span>
+        </div>
+    </div>
 
     <input type="file" id="avatarInput">
-    <button id="changeAvatarBtn">Cambiar Avatar</button>
-    <button id="logoutBtn">Logout</button>
+    <button id="changeAvatarBtn">Update PFP</button>
+    <button id="logoutBtn" style="margin-top:auto">Exit</button>
   </div>
 
   <div id="chat-container">
-    <div id="messages"></div>
+    <div id="messages">
+        <div class="message">
+            <div class="message-content">
+                <img src="https://via.placeholder.com/20" class="msg-avatar">
+                <span class="nameNormal">Philip Isenhour:</span>
+                <span class="msgText">let me shut down netmeeting</span>
+            </div>
+        </div>
+    </div>
 
     <div id="input-container">
-      <input id="msgBox" placeholder="Escribe tu mensaje...">
-      <button id="sendBtn">Enviar</button>
+      <label style="font-size: 12px;">Message to send:</label>
+      <textarea id="msgBox" rows="3"></textarea>
+      <button id="sendBtn">Send Message</button>
     </div>
   </div>
 
